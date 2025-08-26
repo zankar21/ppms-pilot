@@ -1,3 +1,4 @@
+// client/src/App.jsx
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 
@@ -7,6 +8,7 @@ import Inventory from "./pages/Inventory.jsx";
 import Maintenance from "./pages/Maintenance.jsx";
 import Logbook from "./pages/Logbook.jsx";
 import Login from "./pages/Login.jsx";
+import UsersPage from "./features/admin/UsersPage.jsx";
 
 // Components
 import RouteGuard from "./components/RouteGuard.jsx";
@@ -58,6 +60,18 @@ export default function App() {
           <RouteGuard roles={["operator", "engineer", "admin"]}>
             <AppLayout>
               <Logbook />
+            </AppLayout>
+          </RouteGuard>
+        }
+      />
+
+      {/* Admin-only: Users */}
+      <Route
+        path="/admin/users"
+        element={
+          <RouteGuard roles={["admin"]}>
+            <AppLayout>
+              <UsersPage />
             </AppLayout>
           </RouteGuard>
         }

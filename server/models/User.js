@@ -1,52 +1,34 @@
-// server/models/User.js
-import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
+import mongoose from "mongoose";
+import bcrypt from "bcrypt";
 
-const ROLES = ['operator', 'engineer', 'admin'];
+const ROLES = ["admin", "engineer", "operator"];
 
 const userSchema = new mongoose.Schema(
   {
-    email: { type: String, required: true, unique: true, index: true, trim: true },
-    name: { type: String, trim: true },
-    passwordHash: { type: String, select: false },
-    role: { type: String, enum: ROLES, default: 'operator', index: true },
-    // optional: for future password reset / audit
-    lastLoginAt: { type: Date },
+    name: { type: String, required: true, trim: true },
+    email: { type: String, required: true, unique: true, lowercase: true, index: true },
+    password: { type: String, required: true, minlength: 6 },
+    role: { type: String, enum: ROLES, default: "operator" },
+    isActive: { type: Boolean, default: true },
   },
   { timestamps: true }
 );
 
-// Hide sensitive fields when converting to JSON
-userSchema.set('toJSON', {
-  transform: (_doc, ret) => {
-    delete ret.passwordHash;
-    return ret;
-  },
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+  this.password = await bcrypt.hash(this.password, 10);
+  next();
 });
 
-// Instance methods
-userSchema.methods.setPassword = async function setPassword(plain) {
-  const salt = await bcrypt.genSalt(10);
-  this.passwordHash = await bcrypt.hash(plain, salt);
+userSchema.methods.comparePassword = function (plain) {
+  return bcrypt.compare(plain, this.password);
 };
 
-userSchema.methods.validatePassword = async function validatePassword(plain) {
-  if (!this.passwordHash) return false;
-  return bcrypt.compare(plain, this.passwordHash);
+userSchema.methods.toJSON = function () {
+  const obj = this.toObject();
+  delete obj.password;
+  return obj;
 };
 
-// Static helper to create user with password
-userSchema.statics.createWithPassword = async function createWithPassword({
-  email,
-  name,
-  role = 'operator',
-  password,
-}) {
-  const user = new this({ email, name, role });
-  await user.setPassword(password);
-  return user.save();
-};
-
-const User = mongoose.model('User', userSchema);
-export default User;
+export default mongoose.model("User", userSchema);
 export { ROLES };
