@@ -1,8 +1,22 @@
+// client/src/pages/Inventory.jsx
 import React, { useEffect, useState } from "react";
 import { api } from "../services/api";
 import Drawer from "../components/Drawer.jsx";
 import Filters from "../components/Filters.jsx";
 import UploadDataDialog from "../components/UploadDataDialog.jsx";
+
+function exportCsv(name, rows) {
+  const cols = ["part_no", "description", "uom", "min", "max", "location", "unit", "department"];
+  const header = cols.join(",");
+  const lines = rows.map((r) => cols.map((c) => `"${(r[c] ?? "").toString().replace(/"/g, '""')}"`).join(","));
+  const csv = [header, ...lines].join("\n");
+  const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
 
 export default function Inventory() {
   const [rows, setRows] = useState([]);
@@ -120,21 +134,25 @@ export default function Inventory() {
   return (
     <div className="p-4 md:p-6">
       <h1 className="text-2xl font-bold">Inventory</h1>
-      <p className="muted" style={{ marginBottom: 12 }}>
-        Upload historical <b>transactions</b> to power forecasting and trends. Master item fields are managed below.
-      </p>
+      <div className="flex items-center gap-2" style={{ marginBottom: 12, flexWrap: "wrap" }}>
+        <span className="muted">
+          Upload historical <b>transactions</b> (doesn’t change master items).
+        </span>
+        <button className="btn" onClick={() => exportCsv("inventory_items_filtered.csv", rows)}>
+          Export CSV (items)
+        </button>
+      </div>
 
       {/* CSV/Excel uploader for transactions */}
       <UploadDataDialog
         kind="inventory"
         label="Upload transactions (CSV/Excel)"
         onDone={() => {
-          // Transactions import doesn’t change the items list, so we don’t reload here.
-          // If you maintain on-hand via transactions, you can trigger a refresh of any stats widgets here.
+          /* items list not affected directly by txn import */
         }}
       />
 
-      {/* Filters (unit/department) */}
+      {/* Filters */}
       <div className="card" style={{ marginTop: 12 }}>
         <Filters unit={unit} setUnit={setUnit} dept={dept} setDept={setDept} />
         <div
@@ -258,6 +276,7 @@ export default function Inventory() {
             ))}
           </tbody>
         </table>
+        {!rows.length && <div className="muted p-3">No items.</div>}
       </div>
 
       {/* Edit drawer */}
@@ -266,19 +285,11 @@ export default function Inventory() {
           <div className="grid grid-2">
             <div className="card">
               <div className="label">Part No</div>
-              <input
-                className="input"
-                value={edit.part_no}
-                onChange={(e) => onChange("part_no", e.target.value)}
-              />
+              <input className="input" value={edit.part_no} onChange={(e) => onChange("part_no", e.target.value)} />
             </div>
             <div className="card">
               <div className="label">UOM</div>
-              <input
-                className="input"
-                value={edit.uom || ""}
-                onChange={(e) => onChange("uom", e.target.value)}
-              />
+              <input className="input" value={edit.uom || ""} onChange={(e) => onChange("uom", e.target.value)} />
             </div>
             <div className="card" style={{ gridColumn: "1 / -1" }}>
               <div className="label">Description</div>
@@ -316,11 +327,7 @@ export default function Inventory() {
             </div>
             <div className="card">
               <div className="label">Unit</div>
-              <input
-                className="input"
-                value={edit.unit || ""}
-                onChange={(e) => onChange("unit", e.target.value)}
-              />
+              <input className="input" value={edit.unit || ""} onChange={(e) => onChange("unit", e.target.value)} />
             </div>
             <div className="card">
               <div className="label">Dept</div>
