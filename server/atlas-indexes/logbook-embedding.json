@@ -1,0 +1,16 @@
+{
+  "mappings": {
+    "dynamic": false,
+    "fields": {
+      "embedding": {
+        "type": "knnVector",
+        "dimensions": 384,
+        "similarity": "cosine"
+      },
+      "unit": { "type": "string" },
+      "department": { "type": "string" },
+      "title": { "type": "string" },
+      "body": { "type": "string" }
+    }
+  }
+}

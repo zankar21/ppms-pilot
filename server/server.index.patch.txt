@@ -1,0 +1,18 @@
+// server/index.js (MERGE GUIDE)
+/*
+1) Ensure you have:
+   import searchRouter from './routes/search.js';
+   import anomalyRouter from './routes/anomaly.js';
+   import insightsRouter from './routes/insights.js';
+   import { scheduleDailyInsights } from './jobs/dailyInsights.js';
+
+2) After app/cors/json setup:
+   app.use('/api/search', searchRouter);
+   app.use('/api/anomaly', anomalyRouter);
+   app.use('/api/insights', insightsRouter);
+
+3) Once DB connected and server started, schedule the job:
+   scheduleDailyInsights();
+
+4) Optionally, call generateDailyInsightsNow() after first boot to seed today's summary.
+*/
