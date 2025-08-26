@@ -145,7 +145,10 @@ export default function Logbook() {
         <Filters unit={unit} setUnit={setUnit} dept={dept} setDept={setDept} />
 
         {/* quick add */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(6, minmax(0,1fr))", gap: 10, marginBottom: 12 }}>
+        <div
+          className="responsive-grid-6"
+          style={{ display: "grid", gridTemplateColumns: "repeat(6, minmax(0,1fr))", gap: 10, marginBottom: 12 }}
+        >
           <input
             className="input"
             type="date"
@@ -181,30 +184,32 @@ export default function Logbook() {
         </div>
 
         {/* table */}
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Shift</th>
-              <th>Unit</th>
-              <th>Dept</th>
-              <th>Summary</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r._id} style={{ cursor: "pointer" }} onClick={() => show(r)}>
-                <td>{r.date}</td>
-                <td>
-                  <span className="badge">{r.shift}</span>
-                </td>
-                <td>{r.unit}</td>
-                <td>{r.department}</td>
-                <td>{r.summary}</td>
+        <div className="table-responsive">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Shift</th>
+                <th>Unit</th>
+                <th>Dept</th>
+                <th>Summary</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r._id} style={{ cursor: "pointer" }} onClick={() => show(r)}>
+                  <td>{r.date}</td>
+                  <td>
+                    <span className="badge">{r.shift}</span>
+                  </td>
+                  <td>{r.unit}</td>
+                  <td>{r.department}</td>
+                  <td>{r.summary}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         {!rows.length && <div className="muted p-3">No entries.</div>}
       </div>
 

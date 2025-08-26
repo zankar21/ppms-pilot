@@ -156,6 +156,7 @@ export default function Inventory() {
       <div className="card" style={{ marginTop: 12 }}>
         <Filters unit={unit} setUnit={setUnit} dept={dept} setDept={setDept} />
         <div
+          className="responsive-controls"
           style={{
             display: "grid",
             gridTemplateColumns: "2fr 1fr 80px",
@@ -185,7 +186,10 @@ export default function Inventory() {
         <div className="label" style={{ marginBottom: 8 }}>
           Add New Item
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(8, minmax(0,1fr))", gap: 10 }}>
+        <div
+          className="responsive-grid-8"
+          style={{ display: "grid", gridTemplateColumns: "repeat(8, minmax(0,1fr))", gap: 10 }}
+        >
           <input
             className="input"
             placeholder="Part No"
@@ -248,34 +252,36 @@ export default function Inventory() {
 
       {/* Items table */}
       <div className="card">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Part No</th>
-              <th>Description</th>
-              <th>UOM</th>
-              <th>Min</th>
-              <th>Max</th>
-              <th>Location</th>
-              <th>Unit</th>
-              <th>Dept</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r._id} style={{ cursor: "pointer" }} onClick={() => show(r)}>
-                <td style={{ fontWeight: 700 }}>{r.part_no}</td>
-                <td>{r.description}</td>
-                <td>{r.uom}</td>
-                <td>{r.min}</td>
-                <td>{r.max}</td>
-                <td>{r.location}</td>
-                <td>{r.unit}</td>
-                <td>{r.department}</td>
+        <div className="table-responsive">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Part No</th>
+                <th>Description</th>
+                <th>UOM</th>
+                <th>Min</th>
+                <th>Max</th>
+                <th>Location</th>
+                <th>Unit</th>
+                <th>Dept</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r._id} style={{ cursor: "pointer" }} onClick={() => show(r)}>
+                  <td style={{ fontWeight: 700 }}>{r.part_no}</td>
+                  <td>{r.description}</td>
+                  <td>{r.uom}</td>
+                  <td>{r.min}</td>
+                  <td>{r.max}</td>
+                  <td>{r.location}</td>
+                  <td>{r.unit}</td>
+                  <td>{r.department}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         {!rows.length && <div className="muted p-3">No items.</div>}
       </div>
 

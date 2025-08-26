@@ -12,8 +12,9 @@
   --border:#1f2937;
   --ring:#22d3ee55;
 }
-*{box-sizing:border-box}
-html,body,#root{height:100%}
+
+*{ box-sizing:border-box }
+html,body,#root{ height:100% }
 body{
   margin:0;
   background:
@@ -26,15 +27,19 @@ body{
 
 /* Layout */
 .app{
-  display:grid; grid-template-columns: 250px 1fr; grid-template-rows: 64px 1fr;
+  display:grid;
+  grid-template-columns: 250px 1fr;
+  grid-template-rows: 64px 1fr;
   grid-template-areas: "sidebar header" "sidebar main";
   height:100%;
 }
 .header{
-  grid-area: header; display:flex; align-items:center; gap:16px; padding:0 16px;
+  grid-area: header;
+  display:flex; align-items:center; gap:16px; padding:0 16px;
   backdrop-filter:saturate(150%) blur(8px);
   background:linear-gradient(to right, var(--panel), transparent);
   border-bottom:1px solid var(--border);
+  position: sticky; top: 0; z-index: 30; /* sticky on scroll */
 }
 .sidebar{
   grid-area: sidebar; padding:16px; border-right:1px solid var(--border);
@@ -51,7 +56,7 @@ body{
   box-shadow: 0 0 0 2px #ffffff0e inset, 0 8px 24px #00000066;
 }
 
-/* Nav tabs in sidebar/header */
+/* Nav tabs */
 .tabs{ display:flex; flex-wrap:wrap; gap:8px; }
 .btn{
   appearance:none; border:1px solid var(--border); background:var(--panel);
@@ -120,7 +125,7 @@ body{
 .ask .input{ min-height:40px; }
 .ask .btn{ min-height:40px; }
 
-/* Drawer / panel helpers (for edit/details) */
+/* Drawer */
 .drawer{
   position:fixed; right:0; top:0; height:100%; width:420px; max-width:100%;
   background:linear-gradient(180deg, var(--panel-strong), #0b1220);
@@ -129,7 +134,7 @@ body{
 }
 .drawer h3{ margin:0 0 8px; }
 
-/* Recharts theming */
+/* Recharts */
 .recharts-default-tooltip{
   background:#0b1220 !important; border:1px solid var(--border) !important; border-radius:10px !important;
   color:var(--text) !important; box-shadow:0 8px 24px #0008;
@@ -153,3 +158,61 @@ hr.hr{ border:0; border-top:1px solid var(--border); margin:10px 0; }
 *::-webkit-scrollbar-track{ background:#0b1220; }
 *::-webkit-scrollbar-thumb{ background:#1f2937; border-radius:999px; border:2px solid #0b1220; }
 *::-webkit-scrollbar-thumb:hover{ background:#263244; }
+
+/* --- Mobile improvements --- */
+@media (max-width: 1024px) {
+  /* Collapse grid to single column so sidebar doesn't reserve width */
+  .app{
+    grid-template-columns: 1fr;
+    grid-template-rows: 64px 1fr;
+    grid-template-areas:
+      "header"
+      "main";
+  }
+
+  /* Off-canvas sidebar */
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    width: 260px;
+    max-width: 85vw;
+    transform: translateX(-100%);
+    transition: transform .25s ease;
+    z-index: 50;
+  }
+  .sidebar.open { transform: translateX(0); }
+
+  /* Backdrop */
+  .sidebar-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.35);
+    z-index: 40;
+    opacity: 0; pointer-events: none;
+    transition: opacity .2s ease;
+  }
+  .sidebar-backdrop.show { opacity: 1; pointer-events: all; }
+
+  /* Header tweaks */
+  .menu-btn { display: inline-flex; align-items: center; justify-content: center; margin-right: 8px; }
+  .only-mobile { display: inline-flex; }
+}
+@media (min-width: 1025px) {
+  .menu-btn, .only-mobile { display: none; }
+}
+
+/* Scrollable tables on small screens */
+.table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* Stack big form grids on small screens */
+@media (max-width: 640px) {
+  .responsive-grid-8 { grid-template-columns: 1fr !important; }
+  .responsive-grid-6 { grid-template-columns: 1fr !important; }
+  .responsive-controls { grid-template-columns: 1fr !important; gap: 8px !important; }
+}
+
+/* Optional: tighter spacing on very small screens */
+@media (max-width: 420px) {
+  .card { padding: 12px; }
+  .btn  { padding: 8px 10px; }
+  .input, .select, .textarea { padding: 8px 10px; }
+}

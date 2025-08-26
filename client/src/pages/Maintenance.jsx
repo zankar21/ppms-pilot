@@ -171,6 +171,7 @@ export default function Maintenance() {
 
           {/* quick create */}
           <div
+            className="responsive-grid-6"
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(6, minmax(0,1fr))",
@@ -214,32 +215,34 @@ export default function Maintenance() {
           </div>
 
           {/* table */}
-          <table className="table">
-            <thead>
-              <tr>
-                <th>When</th>
-                <th>Type</th>
-                <th>Unit</th>
-                <th>Dept</th>
-                <th>Equipment</th>
-                <th>Fault</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r._id} style={{ cursor: "pointer" }} onClick={() => show(r)}>
-                  <td>{new Date(r.createdAt).toLocaleString()}</td>
-                  <td>
-                    <span className="badge">{r.type}</span>
-                  </td>
-                  <td>{r.unit}</td>
-                  <td>{r.department}</td>
-                  <td style={{ fontWeight: 700 }}>{r.equipment_tag}</td>
-                  <td>{r.fault}</td>
+          <div className="table-responsive">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>When</th>
+                  <th>Type</th>
+                  <th>Unit</th>
+                  <th>Dept</th>
+                  <th>Equipment</th>
+                  <th>Fault</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r._id} style={{ cursor: "pointer" }} onClick={() => show(r)}>
+                    <td>{new Date(r.createdAt).toLocaleString()}</td>
+                    <td>
+                      <span className="badge">{r.type}</span>
+                    </td>
+                    <td>{r.unit}</td>
+                    <td>{r.department}</td>
+                    <td style={{ fontWeight: 700 }}>{r.equipment_tag}</td>
+                    <td>{r.fault}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           {!rows.length && <div className="muted p-3">No records.</div>}
         </div>
       </div>
