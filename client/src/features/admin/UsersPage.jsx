@@ -3,10 +3,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../services/api";
 import { getUser } from "../../services/auth";
 
-// Allowed roles (no client)
 const ROLES = ["admin", "engineer", "operator"];
 
-// Admin-only guard
 function AdminGuard({ children }) {
   const me = getUser();
   if (!me?.role) return <div className="p-6 text-red-500">Unauthenticated.</div>;
@@ -87,13 +85,12 @@ function CreateUserForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  the const [role, setRole] = useState("operator");
+  const [role, setRole] = useState("operator");
   const [msg, setMsg] = useState("");
 
   const create = useMutation({
     mutationFn: async () => {
       const payload = { name, email, password, role };
-      // ✅ Use /api/users
       return (await api.post("/api/users", payload)).data;
     },
     onSuccess: () => {
@@ -121,7 +118,11 @@ function CreateUserForm() {
         <TextInput label="Temporary password" type="password" value={password} onChange={setPassword} required />
         <Select label="Role" value={role} onChange={setRole} options={ROLES} />
         <div className="md:col-span-2 flex items-center gap-2">
-          <button type="submit" className="px-4 py-2 rounded-2xl bg-black text-white disabled:opacity-50" disabled={create.isPending}>
+          <button
+            type="submit"
+            className="px-4 py-2 rounded-2xl bg-black text-white disabled:opacity-50"
+            disabled={create.isPending}
+          >
             {create.isPending ? "Creating…" : "Create user"}
           </button>
           {msg && <span className="text-sm text-slate-600 dark:text-slate-300">{msg}</span>}
@@ -135,21 +136,19 @@ function UsersTable() {
   const qc = useQueryClient();
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["users"],
-    // ✅ Use /api/users
     queryFn: async () => (await api.get("/api/users")).data,
     refetchOnWindowFocus: false,
     staleTime: 10_000,
   });
 
   const patch = useMutation({
-    // ✅ Use /api/users/:id
     mutationFn: async ({ id, patch }) => (await api.patch(`/api/users/${id}`, patch)).data,
     onSuccess: () => qc.invalidateQueries({ queryKey: ["users"] }),
   });
 
   const reset = useMutation({
-    // ✅ Use /api/users/:id/reset-password
-    mutationFn: async ({ id, newPassword }) => (await api.post(`/api/users/${id}/reset-password`, { newPassword })).data,
+    mutationFn: async ({ id, newPassword }) =>
+      (await api.post(`/api/users/${id}/reset-password`, { newPassword })).data,
   });
 
   if (isLoading) return <div className="p-4">Loading users…</div>;
@@ -232,7 +231,11 @@ function UserRow({ u, onPatch, onReset }) {
       </td>
       <td className="p-3">{u.email}</td>
       <td className="p-3">
-        <select className="border rounded-lg px-2 py-1 bg-white dark:bg-slate-900" value={role} onChange={(e) => setRole(e.target.value)}>
+        <select
+          className="border rounded-lg px-2 py-1 bg-white dark:bg-slate-900"
+          value={role}
+          onChange={(e) => setRole(e.target.value)}
+        >
           {ROLES.map((r) => (
             <option key={r} value={r}>
               {r}
@@ -245,10 +248,18 @@ function UserRow({ u, onPatch, onReset }) {
       </td>
       <td className="p-3">
         <div className="flex items-center gap-2">
-          <button onClick={save} disabled={busy} className="px-3 py-1 rounded-xl bg-black text-white text-xs disabled:opacity-50">
+          <button
+            onClick={save}
+            disabled={busy}
+            className="px-3 py-1 rounded-xl bg-black text-white text-xs disabled:opacity-50"
+          >
             {busy ? "…" : "Save"}
           </button>
-          <button onClick={resetPw} disabled={busy} className="px-3 py-1 rounded-xl border text-xs">
+          <button
+            onClick={resetPw}
+            disabled={busy}
+            className="px-3 py-1 rounded-xl border text-xs"
+          >
             Reset password
           </button>
         </div>
