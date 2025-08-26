@@ -343,19 +343,13 @@ export default function Inventory() {
                 onChange={(e) => onChange("department", e.target.value)}
               />
             </div>
-            <div style={{ display: "flex", gap: 10, gridColumn: "1 / -1" }}>
-              <button className="btn" onClick={save} disabled={saving}>
-                {saving ? "Saving…" : "Save"}
-              </button>
-              <button
-                className="btn"
-                onClick={removeOne}
-                disabled={deleting}
-                style={{ borderColor: "#ef4444", color: "#ef4444" }}
-              >
-                {deleting ? "Deleting…" : "Delete"}
-              </button>
-            </div>
+            <div className="drawer-actions" style={{gridColumn:'1 / -1'}}>
+  <button className="btn" onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
+  <button className="btn danger" onClick={removeOne} disabled={deleting}>
+    {deleting ? 'Deleting…' : 'Delete'}
+  </button>
+</div>
+
           </div>
         )}
       </Drawer>

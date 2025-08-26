@@ -125,14 +125,33 @@ body{
 .ask .input{ min-height:40px; }
 .ask .btn{ min-height:40px; }
 
-/* Drawer */
+/* Drawer: ensure full dynamic viewport height + extra bottom padding for safe area */
 .drawer{
-  position:fixed; right:0; top:0; height:100%; width:420px; max-width:100%;
+  position:fixed; right:0; top:0;
+  height:100dvh; /* better on mobile than 100% */
+  width:420px; max-width:100%;
   background:linear-gradient(180deg, var(--panel-strong), #0b1220);
-  border-left:1px solid var(--border); box-shadow:-12px 0 30px #0008;
-  padding:16px; overflow:auto; z-index:50;
+  border-left:1px solid var(--border);
+  box-shadow:-12px 0 30px #0008;
+  padding:16px;
+  padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)); /* room for sticky actions */
+  overflow:auto; z-index:50;
 }
-.drawer h3{ margin:0 0 8px; }
+
+/* Sticky action bar inside drawers */
+.drawer-actions{
+  position: sticky;
+  bottom: 0;
+  display:flex; gap:10px;
+  background: linear-gradient(180deg, transparent, var(--panel-strong) 45%);
+  padding: 10px 0 calc(10px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+  z-index: 1;
+}
+
+/* Optional: red outline variant already matches your theme */
+.btn.danger{ border-color:#7a1d1d; background:#0b1220; color:var(--text); }
 
 /* Recharts */
 .recharts-default-tooltip{
