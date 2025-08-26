@@ -1,7 +1,9 @@
+// client/src/pages/Logbook.jsx
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import Drawer from '../components/Drawer.jsx';
 import Filters from '../components/Filters.jsx';
+import UploadDataDialog from "../components/UploadDataDialog.jsx";
 
 export default function Logbook() {
   // list + filters
@@ -26,8 +28,12 @@ export default function Logbook() {
 
   // list honoring filters
   const load = async () => {
-    const r = await api.get('/api/logbook', { params: { unit, dept } });
-    setRows(r.data.rows);
+    try {
+      const r = await api.get('/api/logbook', { params: { unit, dept } });
+      setRows(r.data.rows || []);
+    } catch (e) {
+      alert(e?.response?.data?.error || e.message || 'Failed to load logbook');
+    }
   };
   useEffect(()=>{ load(); }, [unit, dept]);
 
@@ -41,9 +47,13 @@ export default function Logbook() {
       department: form.department,
       summary: form.summary || ''
     };
-    await api.post('/api/logbook', payload);
-    setForm({ date:'', shift:'A', unit:'UNIT-1', department:'MECH', summary:'' });
-    load();
+    try {
+      await api.post('/api/logbook', payload);
+      setForm({ date:'', shift:'A', unit:'UNIT-1', department:'MECH', summary:'' });
+      load();
+    } catch (e) {
+      alert(e?.response?.data?.error || e.message || 'Failed to add logbook entry');
+    }
   };
 
   // open drawer
@@ -79,6 +89,8 @@ export default function Logbook() {
       await api.put(`/api/logbook/${edit._id}`, payload);
       await load();
       setOpen(false);
+    } catch (e) {
+      alert(e?.response?.data?.error || e.message || 'Failed to save logbook entry');
     } finally { setSaving(false); }
   };
 
@@ -91,14 +103,28 @@ export default function Logbook() {
       await api.delete(`/api/logbook/${edit._id}`);
       await load();
       setOpen(false);
+    } catch (e) {
+      alert(e?.response?.data?.error || e.message || 'Failed to delete logbook entry');
     } finally { setDeleting(false); }
   };
 
   return (
-    <>
+    <div className="p-4 md:p-6">
+      <h1 className="text-2xl font-bold">Logbook</h1>
+      <p className="muted" style={{ marginBottom: 12 }}>
+        Upload historical logbook notes via CSV/Excel. Unknown columns are ignored; common headers are auto-mapped.
+      </p>
+
+      {/* CSV/Excel uploader for logbook notes */}
+      <UploadDataDialog
+        kind="logbook"
+        label="Upload logbook notes (CSV/Excel)"
+        onDone={load}
+      />
+
       <Filters unit={unit} setUnit={setUnit} dept={dept} setDept={setDept} />
 
-      <div className="card">
+      <div className="card" style={{ marginTop: 12 }}>
         {/* quick add */}
         <div style={{display:'grid', gridTemplateColumns:'repeat(6, minmax(0,1fr))', gap:10, marginBottom:12}}>
           <input className="input" type="date" value={form.date} onChange={e=>setForm({...form, date:e.target.value})}/>
@@ -116,18 +142,19 @@ export default function Logbook() {
           <thead><tr>
             <th>Date</th><th>Shift</th><th>Unit</th><th>Dept</th><th>Summary</th>
           </tr></thead>
-        <tbody>
-          {rows.map(r=>(
-            <tr key={r._id} style={{cursor:'pointer'}} onClick={()=>show(r)}>
-              <td>{r.date}</td>
-              <td><span className="badge">{r.shift}</span></td>
-              <td>{r.unit}</td>
-              <td>{r.department}</td>
-              <td>{r.summary}</td>
-            </tr>
-          ))}
-        </tbody>
+          <tbody>
+            {rows.map(r=>(
+              <tr key={r._id} style={{cursor:'pointer'}} onClick={()=>show(r)}>
+                <td>{r.date}</td>
+                <td><span className="badge">{r.shift}</span></td>
+                <td>{r.unit}</td>
+                <td>{r.department}</td>
+                <td>{r.summary}</td>
+              </tr>
+            ))}
+          </tbody>
         </table>
+        {!rows.length && <div className="muted p-3">No entries.</div>}
       </div>
 
       {/* drawer */}
@@ -185,7 +212,7 @@ export default function Logbook() {
           </div>
         )}
       </Drawer>
-    </>
+    </div>
   );
 }
 

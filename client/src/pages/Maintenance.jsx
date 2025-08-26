@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import Drawer from '../components/Drawer.jsx';
 import Filters from '../components/Filters.jsx';
+import UploadDataDialog from "../components/UploadDataDialog.jsx";
 
 export default function Maintenance() {
   // list + filters
@@ -26,8 +27,12 @@ export default function Maintenance() {
 
   // list loader honors filters
   const load = async () => {
-    const r = await api.get('/api/maintenance', { params: { unit, dept } });
-    setRows(r.data.rows);
+    try {
+      const r = await api.get('/api/maintenance', { params: { unit, dept } });
+      setRows(r.data.rows || []);
+    } catch (e) {
+      alert(e?.response?.data?.error || e.message || 'Failed to load maintenance');
+    }
   };
   useEffect(()=>{ load(); }, [unit, dept]);
 
@@ -40,9 +45,13 @@ export default function Maintenance() {
       equipment_tag: form.equipment_tag || '',
       fault: form.fault || ''
     };
-    await api.post('/api/maintenance', payload);
-    setForm({ type:'BD', unit:'UNIT-1', department:'MECH', equipment_tag:'', fault:'' });
-    load();
+    try {
+      await api.post('/api/maintenance', payload);
+      setForm({ type:'BD', unit:'UNIT-1', department:'MECH', equipment_tag:'', fault:'' });
+      load();
+    } catch (e) {
+      alert(e?.response?.data?.error || e.message || 'Failed to add maintenance');
+    }
   };
 
   // open drawer for edit
@@ -99,6 +108,8 @@ export default function Maintenance() {
       await api.put(`/api/maintenance/${edit._id}`, payload);
       await load();
       setOpen(false);
+    } catch (e) {
+      alert(e?.response?.data?.error || e.message || 'Failed to save maintenance');
     } finally { setSaving(false); }
   };
 
@@ -111,44 +122,61 @@ export default function Maintenance() {
       await api.delete(`/api/maintenance/${edit._id}`);
       await load();
       setOpen(false);
+    } catch (e) {
+      alert(e?.response?.data?.error || e.message || 'Failed to delete maintenance');
     } finally { setDeleting(false); }
   };
 
   return (
     <>
-      <Filters unit={unit} setUnit={setUnit} dept={dept} setDept={setDept} />
+      <div className="p-4 md:p-6">
+        <h1 className="text-2xl font-bold">Maintenance</h1>
+        <p className="muted" style={{ marginBottom: 12 }}>
+          Upload historical BD/PM/CM events via CSV/Excel. Unknown columns are ignored; common headers are auto-mapped.
+        </p>
 
-      <div className="card">
-        {/* quick create */}
-        <div style={{display:'grid', gridTemplateColumns:'repeat(6, minmax(0,1fr))', gap:10, marginBottom:12}}>
-          <select className="select" value={form.type} onChange={e=>setForm({...form, type:e.target.value})}>
-            <option>PM</option><option>CM</option><option>BD</option>
-          </select>
-          <input className="input" placeholder="Unit (e.g. UNIT-1)" value={form.unit} onChange={e=>setForm({...form, unit:e.target.value})}/>
-          <input className="input" placeholder="Dept (MECH/ELEC/INST/CIV)" value={form.department} onChange={e=>setForm({...form, department:e.target.value})}/>
-          <input className="input" placeholder="Equipment Tag" value={form.equipment_tag} onChange={e=>setForm({...form, equipment_tag:e.target.value})}/>
-          <input className="input" placeholder="Fault" value={form.fault} onChange={e=>setForm({...form, fault:e.target.value})}/>
-          <button className="btn" onClick={submit}>Add</button>
+        {/* CSV/Excel uploader for maintenance history */}
+        <UploadDataDialog
+          kind="maintenance"
+          label="Upload maintenance history (CSV/Excel)"
+          onDone={load}
+        />
+
+        <div className="card" style={{ marginTop: 12 }}>
+          <Filters unit={unit} setUnit={setUnit} dept={dept} setDept={setDept} />
+
+          {/* quick create */}
+          <div style={{display:'grid', gridTemplateColumns:'repeat(6, minmax(0,1fr))', gap:10, marginBottom:12, marginTop:10}}>
+            <select className="select" value={form.type} onChange={e=>setForm({...form, type:e.target.value})}>
+              <option>PM</option><option>CM</option><option>BD</option>
+            </select>
+            <input className="input" placeholder="Unit (e.g. UNIT-1)" value={form.unit} onChange={e=>setForm({...form, unit:e.target.value})}/>
+            <input className="input" placeholder="Dept (MECH/ELEC/INST/CIV)" value={form.department} onChange={e=>setForm({...form, department:e.target.value})}/>
+            <input className="input" placeholder="Equipment Tag" value={form.equipment_tag} onChange={e=>setForm({...form, equipment_tag:e.target.value})}/>
+            <input className="input" placeholder="Fault" value={form.fault} onChange={e=>setForm({...form, fault:e.target.value})}/>
+            <button className="btn" onClick={submit}>Add</button>
+          </div>
+
+          {/* table */}
+          <table className="table">
+            <thead><tr>
+              <th>When</th><th>Type</th><th>Unit</th><th>Dept</th><th>Equipment</th><th>Fault</th>
+            </tr></thead>
+            <tbody>
+            {rows.map(r=>(
+              <tr key={r._id} style={{cursor:'pointer'}} onClick={()=>show(r)}>
+                <td>{new Date(r.createdAt).toLocaleString()}</td>
+                <td><span className="badge">{r.type}</span></td>
+                <td>{r.unit}</td>
+                <td>{r.department}</td>
+                <td style={{fontWeight:700}}>{r.equipment_tag}</td>
+                <td>{r.fault}</td>
+              </tr>
+            ))}
+            </tbody>
+          </table>
+          {!rows.length && <div className="muted p-3">No records.</div>}
         </div>
-
-        {/* table */}
-        <table className="table">
-          <thead><tr>
-            <th>When</th><th>Type</th><th>Unit</th><th>Dept</th><th>Equipment</th><th>Fault</th>
-          </tr></thead>
-          <tbody>
-          {rows.map(r=>(
-            <tr key={r._id} style={{cursor:'pointer'}} onClick={()=>show(r)}>
-              <td>{new Date(r.createdAt).toLocaleString()}</td>
-              <td><span className="badge">{r.type}</span></td>
-              <td>{r.unit}</td>
-              <td>{r.department}</td>
-              <td style={{fontWeight:700}}>{r.equipment_tag}</td>
-              <td>{r.fault}</td>
-            </tr>
-          ))}
-          </tbody>
-        </table>
       </div>
 
       {/* drawer */}

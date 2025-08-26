@@ -1,8 +1,6 @@
-// client/src/App.jsx
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 
-// Pages
 import Dashboard from "./pages/Dashboard.jsx";
 import Inventory from "./pages/Inventory.jsx";
 import Maintenance from "./pages/Maintenance.jsx";
@@ -11,7 +9,7 @@ import Login from "./pages/Login.jsx";
 import UsersPage from "./features/admin/UsersPage.jsx";
 import ForecastPage from "./pages/Forecast.jsx";
 import EquipmentInsightsPage from "./pages/EquipmentInsights.jsx";
-// Components
+
 import RouteGuard from "./components/RouteGuard.jsx";
 import AppLayout from "./layouts/AppLayout.jsx";
 
@@ -26,9 +24,7 @@ export default function App() {
         path="/"
         element={
           <RouteGuard roles={["operator", "engineer", "admin"]}>
-            <AppLayout>
-              <Dashboard />
-            </AppLayout>
+            <AppLayout><Dashboard /></AppLayout>
           </RouteGuard>
         }
       />
@@ -37,9 +33,7 @@ export default function App() {
         path="/inventory"
         element={
           <RouteGuard roles={["engineer", "admin"]}>
-            <AppLayout>
-              <Inventory />
-            </AppLayout>
+            <AppLayout><Inventory /></AppLayout>
           </RouteGuard>
         }
       />
@@ -48,9 +42,7 @@ export default function App() {
         path="/maintenance"
         element={
           <RouteGuard roles={["engineer", "admin"]}>
-            <AppLayout>
-              <Maintenance />
-            </AppLayout>
+            <AppLayout><Maintenance /></AppLayout>
           </RouteGuard>
         }
       />
@@ -59,9 +51,7 @@ export default function App() {
         path="/logbook"
         element={
           <RouteGuard roles={["operator", "engineer", "admin"]}>
-            <AppLayout>
-              <Logbook />
-            </AppLayout>
+            <AppLayout><Logbook /></AppLayout>
           </RouteGuard>
         }
       />
@@ -71,33 +61,30 @@ export default function App() {
         path="/admin/users"
         element={
           <RouteGuard roles={["admin"]}>
-            <AppLayout>
-              <UsersPage />
-            </AppLayout>
+            <AppLayout><UsersPage /></AppLayout>
           </RouteGuard>
         }
       />
-<Route
-  path="/forecast"
-  element={
-    <RouteGuard roles={["engineer", "admin"]}>
-      <AppLayout>
-        <ForecastPage />
-      </AppLayout>
-    </RouteGuard>
-  }
-/>
-<Route
-  path="/equipment-insights"
-  element={
-    <RouteGuard roles={["engineer", "admin"]}>
-      <AppLayout>
-        <EquipmentInsightsPage />
-      </AppLayout>
-    </RouteGuard>
-  }
-/>
-      {/* Fallback */}
+
+      {/* New modules */}
+      <Route
+        path="/forecast"
+        element={
+          <RouteGuard roles={["engineer", "admin"]}>
+            <AppLayout><ForecastPage /></AppLayout>
+          </RouteGuard>
+        }
+      />
+
+      <Route
+        path="/equipment-insights"
+        element={
+          <RouteGuard roles={["engineer", "admin"]}>
+            <AppLayout><EquipmentInsightsPage /></AppLayout>
+          </RouteGuard>
+        }
+      />
+
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

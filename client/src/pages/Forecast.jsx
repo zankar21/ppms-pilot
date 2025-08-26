@@ -1,13 +1,12 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../services/api";
-import RouteGuard from "../components/RouteGuard.jsx";
-import AppLayout from "../layouts/AppLayout.jsx";
 
 function ForecastTable() {
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["forecast", "inventory"],
-    queryFn: async () => (await api.get("/api/forecast/inventory?days=90&alpha=0.35&service=0.95&lead=7&review=7")).data,
+    queryFn: async () =>
+      (await api.get("/api/forecast/inventory?days=365&alpha=0.35&service=0.95&lead=7&review=7")).data,
     staleTime: 60_000,
   });
 
@@ -17,7 +16,7 @@ function ForecastTable() {
   const rows = data?.rows || [];
   return (
     <div className="card">
-      <div className="badge">Inventory Forecast (90d)</div>
+      <div className="badge">Inventory Forecast (90–365d)</div>
       <div className="overflow-x-auto" style={{ marginTop: 10 }}>
         <table className="w-full text-sm">
           <thead>
@@ -50,9 +49,7 @@ function ForecastTable() {
                   <td className="p-2">{r.leadTimeDays}</td>
                   <td className="p-2">{r.safetyStock}</td>
                   <td className="p-2">{r.reorderPoint}</td>
-                  <td className="p-2">
-                    <b>{r.reorderQty}</b>
-                  </td>
+                  <td className="p-2"><b>{r.reorderQty}</b></td>
                   <td className="p-2">{r.runoutDate ? new Date(r.runoutDate).toLocaleDateString() : "—"}</td>
                 </tr>
               );
@@ -67,16 +64,12 @@ function ForecastTable() {
 
 export default function ForecastPage() {
   return (
-    <RouteGuard roles={["engineer", "admin"]}>
-      <AppLayout>
-        <div className="p-4 md:p-6">
-          <h1 className="text-2xl font-bold">Forecast</h1>
-          <p className="muted" style={{ marginBottom: 12 }}>
-            Reorder point (ROP) = demand during lead time + safety stock. Items below ROP are highlighted.
-          </p>
-          <ForecastTable />
-        </div>
-      </AppLayout>
-    </RouteGuard>
+    <div className="p-4 md:p-6">
+      <h1 className="text-2xl font-bold">Forecast</h1>
+      <p className="muted" style={{ marginBottom: 12 }}>
+        Reorder point (ROP) = demand during lead time + safety stock. Items below ROP are highlighted.
+      </p>
+      <ForecastTable />
+    </div>
   );
 }

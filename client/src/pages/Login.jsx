@@ -1,114 +1,110 @@
 // client/src/pages/Login.jsx
 import React, { useState } from "react";
-import { useNavigate, useLocation, Link } from "react-router-dom";
-import { login } from "../services/auth";
+import { api } from "../services/api";
 
 export default function Login() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const redirectTo = (location.state && location.state.from) || "/";
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPw, setShowPw] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [show, setShow] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
-  async function onSubmit(e) {
-    e.preventDefault();
+  async function signIn(e) {
+    e?.preventDefault?.();
+    if (!email || !password) return;
+    setBusy(true);
     setErr("");
-    setLoading(true);
     try {
-      const res = await login(email.trim(), password);
-
-      if (res?.ok && res?.token) {
-        // 🔐 Save JWT for axios interceptor
-        localStorage.setItem("ppms_jwt", res.token);
-        // (Optional) save user info for UI
-        if (res.user) localStorage.setItem("ppms_user", JSON.stringify(res.user));
-
-        navigate(redirectTo, { replace: true });
-      } else {
-        setErr(res?.error || "Login failed");
-      }
+      const { data } = await api.post("/api/auth/login", { email, password });
+      localStorage.setItem("ppms_jwt", data.token);
+      localStorage.setItem("ppms_user", JSON.stringify(data.user));
+      window.location.href = "/";
     } catch (e) {
-      const msg =
-        e?.response?.data?.error ||
-        e?.userMessage ||
-        e?.message ||
-        "Login failed";
-      setErr(msg);
+      setErr(e?.response?.data?.error || "Login failed");
     } finally {
-      setLoading(false);
+      setBusy(false);
     }
   }
 
   return (
-    <div className="min-h-screen grid place-items-center bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black">
-      <div className="w-full max-w-md p-6 rounded-2xl bg-white/5 border border-white/10 shadow-xl backdrop-blur">
-        <div className="mb-4">
-          <h1 className="text-2xl font-semibold">Sign in to PPMS</h1>
-          <p className="text-slate-400 text-sm">Predictive Plant Maintenance System</p>
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "grid",
+        placeItems: "center",
+        padding: 24,
+      }}
+    >
+      <form
+        onSubmit={signIn}
+        className="card"
+        style={{
+          width: "100%",
+          maxWidth: 520,
+          padding: 24,
+        }}
+      >
+        <h1 className="text-2xl font-bold" style={{ marginBottom: 6 }}>
+          Sign in to PPMS
+        </h1>
+        <div className="muted" style={{ marginBottom: 16 }}>
+          Predictive Plant Maintenance System
         </div>
 
-        <form onSubmit={onSubmit} className="space-y-4">
-          <div className="space-y-1">
-            <label className="text-sm text-slate-300">Email</label>
-            <input
-              type="email"
-              className="w-full px-3 py-2 rounded-xl bg-black/30 border border-white/10 focus:outline-none focus:ring-2 focus:ring-white/20"
-              placeholder="you@plant.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoFocus
-            />
-          </div>
+        <label className="label">Email</label>
+        <input
+          className="input"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="admin@powerpulsetech.in"
+          autoFocus
+        />
 
-          <div className="space-y-1">
-            <label className="text-sm text-slate-300">Password</label>
-            <div className="flex gap-2">
-              <input
-                type={showPw ? "text" : "password"}
-                className="w-full px-3 py-2 rounded-xl bg-black/30 border border-white/10 focus:outline-none focus:ring-2 focus:ring-white/20"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPw((s) => !s)}
-                className="px-3 rounded-xl bg-white/5 border border-white/10 text-xs"
-                title={showPw ? "Hide password" : "Show password"}
-              >
-                {showPw ? "Hide" : "Show"}
-              </button>
-            </div>
-          </div>
-
-          {err ? (
-            <div className="text-red-400 text-sm bg-red-400/10 border border-red-400/30 rounded-xl px-3 py-2">
-              {err}
-            </div>
-          ) : null}
-
-          <button type="submit" className="btn w-full disabled:opacity-60" disabled={loading}>
-            {loading ? "Signing in…" : "Sign in"}
+        <label className="label" style={{ marginTop: 10 }}>
+          Password
+        </label>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 8 }}>
+          <input
+            className="input"
+            type={show ? "text" : "password"}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+          />
+          <button
+            type="button"
+            className="btn"
+            onClick={() => setShow((s) => !s)}
+            style={{ whiteSpace: "nowrap" }}
+          >
+            {show ? "Hide" : "Show"}
           </button>
-        </form>
-
-        <div className="text-xs text-slate-500 mt-4">
-          <p>
-            Need an account? Ask an <span className="text-slate-300">admin</span> to create one.
-          </p>
-          <p className="mt-1">
-            <Link to="/" className="underline underline-offset-4">
-              ← Back to dashboard
-            </Link>
-          </p>
         </div>
-      </div>
+
+        {err && (
+          <div style={{ color: "var(--danger)", marginTop: 10, fontSize: 14 }}>
+            {err}
+          </div>
+        )}
+
+        <button
+          type="submit"
+          className="btn"
+          disabled={busy}
+          style={{ marginTop: 14, width: "100%" }}
+        >
+          {busy ? "Signing in…" : "Sign in"}
+        </button>
+
+        <div className="muted" style={{ marginTop: 14, fontSize: 14 }}>
+          Need an account? Ask an admin to create one.
+        </div>
+
+        <a href="/" className="muted" style={{ display: "inline-block", marginTop: 12 }}>
+          ← Back to dashboard
+        </a>
+      </form>
     </div>
   );
 }
