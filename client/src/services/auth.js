@@ -1,5 +1,5 @@
 // client/src/services/auth.js
-import { api } from "./api";
+import { api, post } from "./api";
 
 const KEY = "ppms_jwt";
 const USER_KEY = "ppms_user";
@@ -40,9 +40,10 @@ export function hasRole(required) {
 
 /** Login */
 export async function login(email, password) {
-  const res = await api.post("/auth/login", { email, password });
-  if (res.data?.ok) setAuth(res.data);
-  return res.data;
+  // 🔹 use the helper so we get `res.data` directly
+  const data = await post("/api/auth/login", { email, password });
+  if (data?.ok && data?.token) setAuth(data);
+  return data;
 }
 
 /** Logout */
