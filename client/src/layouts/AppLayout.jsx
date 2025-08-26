@@ -1,5 +1,6 @@
 // client/src/layouts/AppLayout.jsx
 import React from "react";
+import { TrendingUp } from "lucide-react"; // at top with other icons
 import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -54,6 +55,7 @@ export default function AppLayout({ children }) {
           <SidebarLink to="/inventory" icon={Boxes} label="Inventory" />
           <SidebarLink to="/maintenance" icon={Wrench} label="Maintenance" />
           <SidebarLink to="/logbook" icon={NotebookText} label="Logbook" />
+<SidebarLink to="/forecast" icon={TrendingUp} label="Forecast" />
 
           {/* Admin-only section */}
           {user?.role === "admin" && (

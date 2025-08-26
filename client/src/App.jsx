@@ -9,6 +9,7 @@ import Maintenance from "./pages/Maintenance.jsx";
 import Logbook from "./pages/Logbook.jsx";
 import Login from "./pages/Login.jsx";
 import UsersPage from "./features/admin/UsersPage.jsx";
+import ForecastPage from "./pages/Forecast.jsx";
 
 // Components
 import RouteGuard from "./components/RouteGuard.jsx";
@@ -76,7 +77,16 @@ export default function App() {
           </RouteGuard>
         }
       />
-
+<Route
+  path="/forecast"
+  element={
+    <RouteGuard roles={["engineer", "admin"]}>
+      <AppLayout>
+        <ForecastPage />
+      </AppLayout>
+    </RouteGuard>
+  }
+/>
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

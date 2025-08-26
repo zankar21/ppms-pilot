@@ -11,6 +11,8 @@ import maintenanceRoutes from "./routes/maintenance.js";
 import logbookRoutes from "./routes/logbook.js";
 import masterRoutes from "./routes/masters.js";
 import usersRoutes from "./routes/users.js";
+import forecastRoutes from "./routes/forecast.js";
+
 // AI / Insights routes
 import searchRoutes from "./routes/search.js";      // /api/search/semantic
 import anomalyRoutes from "./routes/anomaly.js";    // /api/anomaly/...
@@ -80,7 +82,7 @@ app.use("/api/insights",   requireAuth(["operator", "engineer", "admin"]), insig
 app.use("/api/upload",     requireAuth(["engineer", "admin"]), uploadRoutes);
 
 app.use("/api/users", usersRoutes);
-
+app.use("/api/forecast", requireAuth(["engineer", "admin"]), forecastRoutes);
 /* --------------------------- MongoDB Init ------------------------- */
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/ppms";
 
