@@ -1,6 +1,5 @@
 // client/src/layouts/AppLayout.jsx
 import React from "react";
-import { TrendingUp } from "lucide-react"; // at top with other icons
 import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -9,7 +8,9 @@ import {
   NotebookText,
   ShieldCheck,
   LogOut,
-  UserCog, // for Admin → Users link
+  UserCog,
+  TrendingUp,
+  BarChart3,
 } from "lucide-react";
 
 function SidebarLink({ to, icon: Icon, label }) {
@@ -39,6 +40,8 @@ export default function AppLayout({ children }) {
     window.location.href = "/login";
   }
 
+  const isEngineerOrAdmin = user?.role === "engineer" || user?.role === "admin";
+
   return (
     <div className="app">
       {/* Sidebar */}
@@ -47,7 +50,7 @@ export default function AppLayout({ children }) {
           <div className="brand-badge">
             <ShieldCheck size={16} color="white" />
           </div>
-          PPMS 
+          PPMS
         </div>
 
         <nav className="tabs" style={{ marginTop: "20px", flexDirection: "column" }}>
@@ -55,7 +58,14 @@ export default function AppLayout({ children }) {
           <SidebarLink to="/inventory" icon={Boxes} label="Inventory" />
           <SidebarLink to="/maintenance" icon={Wrench} label="Maintenance" />
           <SidebarLink to="/logbook" icon={NotebookText} label="Logbook" />
-<SidebarLink to="/forecast" icon={TrendingUp} label="Forecast" />
+
+          {/* Analyst/Engineer features */}
+          {isEngineerOrAdmin && (
+            <>
+              <SidebarLink to="/equipment-insights" icon={BarChart3} label="Equipment Insights" />
+              <SidebarLink to="/forecast" icon={TrendingUp} label="Forecast" />
+            </>
+          )}
 
           {/* Admin-only section */}
           {user?.role === "admin" && (

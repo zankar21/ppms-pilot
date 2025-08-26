@@ -10,7 +10,7 @@ import Logbook from "./pages/Logbook.jsx";
 import Login from "./pages/Login.jsx";
 import UsersPage from "./features/admin/UsersPage.jsx";
 import ForecastPage from "./pages/Forecast.jsx";
-
+import EquipmentInsightsPage from "./pages/EquipmentInsights.jsx";
 // Components
 import RouteGuard from "./components/RouteGuard.jsx";
 import AppLayout from "./layouts/AppLayout.jsx";
@@ -83,6 +83,16 @@ export default function App() {
     <RouteGuard roles={["engineer", "admin"]}>
       <AppLayout>
         <ForecastPage />
+      </AppLayout>
+    </RouteGuard>
+  }
+/>
+<Route
+  path="/equipment-insights"
+  element={
+    <RouteGuard roles={["engineer", "admin"]}>
+      <AppLayout>
+        <EquipmentInsightsPage />
       </AppLayout>
     </RouteGuard>
   }
