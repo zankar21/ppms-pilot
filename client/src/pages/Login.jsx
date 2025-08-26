@@ -6,8 +6,7 @@ import { login } from "../services/auth";
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const redirectTo =
-    (location.state && location.state.from) || "/"; // go home after login by default
+  const redirectTo = (location.state && location.state.from) || "/";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,13 +20,24 @@ export default function Login() {
     setLoading(true);
     try {
       const res = await login(email.trim(), password);
-      if (res?.ok) {
+
+      if (res?.ok && res?.token) {
+        // 🔐 Save JWT for axios interceptor
+        localStorage.setItem("ppms_jwt", res.token);
+        // (Optional) save user info for UI
+        if (res.user) localStorage.setItem("ppms_user", JSON.stringify(res.user));
+
         navigate(redirectTo, { replace: true });
       } else {
         setErr(res?.error || "Login failed");
       }
     } catch (e) {
-      setErr(e?.response?.data?.error || e?.message || "Login failed");
+      const msg =
+        e?.response?.data?.error ||
+        e?.userMessage ||
+        e?.message ||
+        "Login failed";
+      setErr(msg);
     } finally {
       setLoading(false);
     }
@@ -83,11 +93,7 @@ export default function Login() {
             </div>
           ) : null}
 
-          <button
-            type="submit"
-            className="btn w-full disabled:opacity-60"
-            disabled={loading}
-          >
+          <button type="submit" className="btn w-full disabled:opacity-60" disabled={loading}>
             {loading ? "Signing in…" : "Sign in"}
           </button>
         </form>
