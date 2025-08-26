@@ -48,7 +48,7 @@ export default function Login() {
           Sign in to PPMS
         </h1>
         <div className="muted" style={{ marginBottom: 16 }}>
-          Predictive Plant Maintenance System
+          Proactive Plant Maintenance System
         </div>
 
         <label className="label">Email</label>
