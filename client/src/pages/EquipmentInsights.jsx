@@ -1,5 +1,4 @@
-// client/src/pages/EquipmentInsights.jsx
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useRef, useLayoutEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../services/api";
 import {
@@ -69,6 +68,36 @@ export default function EquipmentInsightsPage() {
     return { text: "Low", className: "" };
   }, [risk]);
 
+  /* ---------- robust width detection for ResponsiveContainer ---------- */
+  const hostRef = useRef(null);
+  const [hostWidth, setHostWidth] = useState(0);
+
+  useLayoutEffect(() => {
+    const el = hostRef.current;
+    if (!el) return;
+    // initial measure
+    const measure = () => {
+      const w = el.clientWidth || 0;
+      setHostWidth((prev) => (prev !== w ? w : prev));
+    };
+    measure();
+
+    // observe size changes
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+
+    // also react to orientation changes
+    const onResize = () => measure();
+    window.addEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onResize);
+
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onResize);
+    };
+  }, []);
+
   return (
     <div className="p-4 md:p-6">
       <h1 className="text-2xl font-bold">Equipment Insights</h1>
@@ -99,14 +128,26 @@ export default function EquipmentInsightsPage() {
             />
           </div>
 
-          {/* Chart (ResponsiveContainer handles mobile widths) */}
+          {/* Chart */}
           <div className="card" style={{ marginTop: 14 }}>
             <div className="badge">Breakdowns per week</div>
-            <div style={{ width: "100%", height: 300, marginTop: 8, minWidth: 1 }}>
+            <div
+              ref={hostRef}
+              style={{
+                width: "100%",
+                minWidth: 0,     // critical inside flex/grid on mobile
+                height: 300,
+                marginTop: 8,
+              }}
+            >
               {series.length === 0 ? (
                 <div className="muted" style={{ padding: 12 }}>No breakdowns in this window.</div>
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
+              ) : hostWidth > 0 ? (
+                <ResponsiveContainer
+                  key={`${selected}-${series.length}-${hostWidth}`} // remount when width changes
+                  width="100%"
+                  height="100%"
+                >
                   <LineChart
                     data={series.map((d) => ({ ...d, count: Number(d.count) || 0 }))}
                     margin={{ top: 8, right: 8, bottom: 8, left: 0 }}
@@ -118,7 +159,7 @@ export default function EquipmentInsightsPage() {
                     <Line type="monotone" dataKey="count" stroke="#22d3ee" strokeWidth={2} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
-              )}
+              ) : null}
             </div>
           </div>
 
