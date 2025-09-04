@@ -2,7 +2,6 @@ import React, { useMemo, useState, useRef, useLayoutEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../services/api";
 import {
-  ResponsiveContainer,
   LineChart,
   Line,
   XAxis,
@@ -26,6 +25,39 @@ function useEquipmentInsights(id) {
     queryFn: async () =>
       (await api.get(`/api/equipment/${id}/insights?windowDays=180&futureDays=30`)).data,
   });
+}
+
+/* ---------- size hook (bulletproof on mobile/webviews) ---------- */
+function useElementSize() {
+  const ref = useRef(null);
+  const [size, setSize] = useState({ width: 0, height: 0 });
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const measure = () => {
+      const w = el.clientWidth || 0;
+      const h = el.clientHeight || 0;
+      setSize((prev) => (prev.width !== w || prev.height !== h ? { width: w, height: h } : prev));
+    };
+    measure();
+
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+
+    const onResize = () => measure();
+    window.addEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onResize);
+
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onResize);
+    };
+  }, []);
+
+  return [ref, size];
 }
 
 /* ---------- small UI bits ---------- */
@@ -59,7 +91,8 @@ export default function EquipmentInsightsPage() {
 
   const rows = eqList?.rows || [];
   const metrics = insights?.metrics;
-  const series = Array.isArray(insights?.series) ? insights.series : [];
+  const seriesRaw = Array.isArray(insights?.series) ? insights.series : [];
+  const series = seriesRaw.map((d) => ({ ...d, count: Number(d.count) || 0 }));
 
   const risk = metrics?.riskScore ?? 0;
   const riskBadge = useMemo(() => {
@@ -68,35 +101,9 @@ export default function EquipmentInsightsPage() {
     return { text: "Low", className: "" };
   }, [risk]);
 
-  /* ---------- robust width detection for ResponsiveContainer ---------- */
-  const hostRef = useRef(null);
-  const [hostWidth, setHostWidth] = useState(0);
-
-  useLayoutEffect(() => {
-    const el = hostRef.current;
-    if (!el) return;
-    // initial measure
-    const measure = () => {
-      const w = el.clientWidth || 0;
-      setHostWidth((prev) => (prev !== w ? w : prev));
-    };
-    measure();
-
-    // observe size changes
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-
-    // also react to orientation changes
-    const onResize = () => measure();
-    window.addEventListener("resize", onResize);
-    window.addEventListener("orientationchange", onResize);
-
-    return () => {
-      ro.disconnect();
-      window.removeEventListener("resize", onResize);
-      window.removeEventListener("orientationchange", onResize);
-    };
-  }, []);
+  // Measure chart host and render LineChart with explicit width/height
+  const [hostRef, hostSize] = useElementSize();
+  const chartHeight = 300; // fixed height (safe for mobile)
 
   return (
     <div className="p-4 md:p-6">
@@ -128,38 +135,40 @@ export default function EquipmentInsightsPage() {
             />
           </div>
 
-          {/* Chart */}
+          {/* Chart (no ResponsiveContainer; uses explicit measured width) */}
           <div className="card" style={{ marginTop: 14 }}>
             <div className="badge">Breakdowns per week</div>
+
             <div
               ref={hostRef}
               style={{
                 width: "100%",
-                minWidth: 0,     // critical inside flex/grid on mobile
-                height: 300,
+                minWidth: 0,           // important in grid/flex
+                height: chartHeight,
                 marginTop: 8,
               }}
             >
               {series.length === 0 ? (
-                <div className="muted" style={{ padding: 12 }}>No breakdowns in this window.</div>
-              ) : hostWidth > 0 ? (
-                <ResponsiveContainer
-                  key={`${selected}-${series.length}-${hostWidth}`} // remount when width changes
-                  width="100%"
-                  height="100%"
+                <div className="muted" style={{ padding: 12 }}>
+                  No breakdowns in this window.
+                </div>
+              ) : hostSize.width > 0 ? (
+                <LineChart
+                  key={`w${hostSize.width}-n${series.length}`} // remount when width changes
+                  width={hostSize.width}
+                  height={chartHeight}
+                  data={series}
+                  margin={{ top: 8, right: 8, bottom: 8, left: 0 }}
                 >
-                  <LineChart
-                    data={series.map((d) => ({ ...d, count: Number(d.count) || 0 }))}
-                    margin={{ top: 8, right: 8, bottom: 8, left: 0 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="week" />
-                    <YAxis allowDecimals={false} />
-                    <Tooltip />
-                    <Line type="monotone" dataKey="count" stroke="#22d3ee" strokeWidth={2} dot={false} />
-                  </LineChart>
-                </ResponsiveContainer>
-              ) : null}
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="week" />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="count" stroke="#22d3ee" strokeWidth={2} dot={false} />
+                </LineChart>
+              ) : (
+                <div className="muted" style={{ padding: 12 }}>Measuring…</div>
+              )}
             </div>
           </div>
 
