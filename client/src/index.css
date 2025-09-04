@@ -282,3 +282,18 @@ html, body, .main {
 
 /* Optional: cards shouldn’t leak shadows/rounded corners off-screen */
 .card { overflow: hidden; }
+/* Allow the page content cell to shrink and let inner scrollers work */
+.main{
+  grid-area: main;
+  padding:20px;
+  overflow:auto;
+  overscroll-behavior: contain;
+  min-width: 0;   /* ← critical for Recharts width calc */
+  min-height: 0;  /* ← lets drawers/tables scroll inside */
+}
+
+/* Cards inside grid/flex shouldn’t block children from shrinking */
+.card{ 
+  min-width: 0;   /* ← prevents zero-width charts in grid cells */
+}
+
