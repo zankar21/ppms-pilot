@@ -1,4 +1,3 @@
-// client/src/pages/Logbook.jsx
 import React, { useEffect, useState } from "react";
 import { api } from "../services/api";
 import Drawer from "../components/Drawer.jsx";
@@ -19,12 +18,10 @@ function exportCsv(name, rows) {
 }
 
 export default function Logbook() {
-  // list + filters
   const [rows, setRows] = useState([]);
   const [unit, setUnit] = useState("");
   const [dept, setDept] = useState("");
 
-  // create form defaults
   const [form, setForm] = useState({
     date: "",
     shift: "A",
@@ -33,13 +30,11 @@ export default function Logbook() {
     summary: "",
   });
 
-  // drawer state
   const [open, setOpen] = useState(false);
   const [edit, setEdit] = useState(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  // list honoring filters
   const load = async () => {
     try {
       const r = await api.get("/api/logbook", { params: { unit, dept } });
@@ -48,12 +43,8 @@ export default function Logbook() {
       alert(e?.response?.data?.error || e.message || "Failed to load logbook");
     }
   };
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [unit, dept]);
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [unit, dept]);
 
-  // create
   const submit = async () => {
     if (!form.date || !form.unit) return;
     const payload = {
@@ -72,7 +63,6 @@ export default function Logbook() {
     }
   };
 
-  // open drawer
   const show = (row) => {
     setEdit({
       ...row,
@@ -84,7 +74,6 @@ export default function Logbook() {
   };
   const onChange = (k, v) => setEdit((p) => ({ ...p, [k]: v }));
 
-  // save
   const save = async () => {
     if (!edit?._id) return;
     setSaving(true);
@@ -112,7 +101,6 @@ export default function Logbook() {
     }
   };
 
-  // delete
   const removeOne = async () => {
     if (!edit?._id) return;
     if (!confirm("Delete this logbook entry?")) return;
@@ -133,12 +121,9 @@ export default function Logbook() {
       <h1 className="text-2xl font-bold">Logbook</h1>
       <div className="flex items-center gap-2" style={{ marginBottom: 12, flexWrap: "wrap" }}>
         <span className="muted">Upload historical logbook notes (CSV/Excel).</span>
-        <button className="btn" onClick={() => exportCsv("logbook_filtered.csv", rows)}>
-          Export CSV
-        </button>
+        <button className="btn" onClick={() => exportCsv("logbook_filtered.csv", rows)}>Export CSV</button>
       </div>
 
-      {/* CSV/Excel uploader for logbook notes (operators are allowed) */}
       <UploadDataDialog kind="logbook" label="Upload logbook notes (CSV/Excel)" onDone={load} />
 
       <div className="card" style={{ marginTop: 12 }}>
@@ -149,59 +134,27 @@ export default function Logbook() {
           className="responsive-grid-6"
           style={{ display: "grid", gridTemplateColumns: "repeat(6, minmax(0,1fr))", gap: 10, marginBottom: 12 }}
         >
-          <input
-            className="input"
-            type="date"
-            value={form.date}
-            onChange={(e) => setForm({ ...form, date: e.target.value })}
-          />
+          <input className="input" type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
           <select className="select" value={form.shift} onChange={(e) => setForm({ ...form, shift: e.target.value })}>
-            <option>A</option>
-            <option>B</option>
-            <option>C</option>
+            <option>A</option><option>B</option><option>C</option>
           </select>
-          <input
-            className="input"
-            placeholder="Unit (e.g. UNIT-1)"
-            value={form.unit}
-            onChange={(e) => setForm({ ...form, unit: e.target.value })}
-          />
-          <input
-            className="input"
-            placeholder="Dept (MECH/ELEC/INST/CIV)"
-            value={form.department}
-            onChange={(e) => setForm({ ...form, department: e.target.value })}
-          />
-          <input
-            className="input"
-            placeholder="Summary"
-            value={form.summary}
-            onChange={(e) => setForm({ ...form, summary: e.target.value })}
-          />
-          <button className="btn" onClick={submit}>
-            Add
-          </button>
+          <input className="input" placeholder="Unit (e.g. UNIT-1)" value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} />
+          <input className="input" placeholder="Dept (MECH/ELEC/INST/CIV)" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} />
+          <input className="input" placeholder="Summary" value={form.summary} onChange={(e) => setForm({ ...form, summary: e.target.value })} />
+          <button className="btn" onClick={submit}>Add</button>
         </div>
 
         {/* table */}
         <div className="table-responsive">
           <table className="table">
             <thead>
-              <tr>
-                <th>Date</th>
-                <th>Shift</th>
-                <th>Unit</th>
-                <th>Dept</th>
-                <th>Summary</th>
-              </tr>
+              <tr><th>Date</th><th>Shift</th><th>Unit</th><th>Dept</th><th>Summary</th></tr>
             </thead>
             <tbody>
               {rows.map((r) => (
                 <tr key={r._id} style={{ cursor: "pointer" }} onClick={() => show(r)}>
                   <td>{r.date}</td>
-                  <td>
-                    <span className="badge">{r.shift}</span>
-                  </td>
+                  <td><span className="badge">{r.shift}</span></td>
                   <td>{r.unit}</td>
                   <td>{r.department}</td>
                   <td>{r.summary}</td>
@@ -213,118 +166,101 @@ export default function Logbook() {
         {!rows.length && <div className="muted p-3">No entries.</div>}
       </div>
 
-      {/* Drawer: actions footer is provided via the 'actions' prop */}
-      <Drawer
-        open={open}
-        title="Logbook Entry"
-        onClose={() => setOpen(false)}
-        actions={
-          <>
-            <button className="btn" onClick={save} disabled={saving}>
-              {saving ? "Saving…" : "Save"}
-            </button>
-            <button className="btn danger" onClick={removeOne} disabled={deleting}>
-              {deleting ? "Deleting…" : "Delete"}
-            </button>
-          </>
-        }
-      >
+      {/* Drawer — child controls scroll + has its own fixed footer */}
+      <Drawer open={open} title="Logbook Entry" onClose={() => setOpen(false)}>
         {!edit ? null : (
-          <div className="grid grid-2" style={{ gap: 12 }}>
-            <div className="card">
-              <div className="label">Date</div>
-              <input
-                className="input"
-                type="date"
-                value={edit.date || ""}
-                onChange={(e) => onChange("date", e.target.value)}
-              />
-            </div>
-            <div className="card">
-              <div className="label">Shift</div>
-              <select className="select" value={edit.shift} onChange={(e) => onChange("shift", e.target.value)}>
-                <option>A</option>
-                <option>B</option>
-                <option>C</option>
-              </select>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              height: "100%",
+              maxHeight: "100dvh",
+              minHeight: 0,
+            }}
+          >
+            {/* Scrollable body */}
+            <div
+              style={{
+                flex: 1,
+                minHeight: 0,
+                overflowY: "auto",
+                WebkitOverflowScrolling: "touch",
+                overscrollBehavior: "contain",
+                padding: 12,
+                paddingBottom: 16,
+              }}
+            >
+              <div className="grid grid-2" style={{ gap: 12 }}>
+                <div className="card">
+                  <div className="label">Date</div>
+                  <input className="input" type="date" value={edit.date || ""} onChange={(e) => onChange("date", e.target.value)} />
+                </div>
+                <div className="card">
+                  <div className="label">Shift</div>
+                  <select className="select" value={edit.shift} onChange={(e) => onChange("shift", e.target.value)}>
+                    <option>A</option><option>B</option><option>C</option>
+                  </select>
+                </div>
+
+                <div className="card">
+                  <div className="label">Unit</div>
+                  <input className="input" value={edit.unit || ""} onChange={(e) => onChange("unit", e.target.value)} />
+                </div>
+                <div className="card">
+                  <div className="label">Department</div>
+                  <input className="input" value={edit.department || ""} onChange={(e) => onChange("department", e.target.value)} />
+                </div>
+
+                <div className="card" style={{ gridColumn: "1 / -1" }}>
+                  <div className="label">Summary</div>
+                  <input className="input" value={edit.summary || ""} onChange={(e) => onChange("summary", e.target.value)} />
+                </div>
+                <div className="card" style={{ gridColumn: "1 / -1" }}>
+                  <div className="label">Details</div>
+                  <input className="input" value={edit.details || ""} onChange={(e) => onChange("details", e.target.value)} />
+                </div>
+
+                <div className="card">
+                  <div className="label">Operator</div>
+                  <input className="input" value={edit.operator || ""} onChange={(e) => onChange("operator", e.target.value)} />
+                </div>
+                <div className="card">
+                  <div className="label">Handed Over To</div>
+                  <input className="input" value={edit.handed_over_to || ""} onChange={(e) => onChange("handed_over_to", e.target.value)} />
+                </div>
+
+                <div className="card">
+                  <div className="label">Load (MW)</div>
+                  <input className="input" type="number" step="0.1" value={edit.load_mw ?? ""} onChange={(e) => onChange("load_mw", e.target.value)} />
+                </div>
+                <div className="card">
+                  <div className="label">Ambient Temp (°C)</div>
+                  <input className="input" type="number" step="0.1" value={edit.ambient_temp_c ?? ""} onChange={(e) => onChange("ambient_temp_c", e.target.value)} />
+                </div>
+
+                <div className="card" style={{ gridColumn: "1 / -1" }}>
+                  <div className="label">Params (JSON)</div>
+                  <textarea className="input" style={{ height: 160 }} value={edit._paramsText} onChange={(e) => onChange("_paramsText", e.target.value)} />
+                </div>
+              </div>
             </div>
 
-            <div className="card">
-              <div className="label">Unit</div>
-              <input className="input" value={edit.unit || ""} onChange={(e) => onChange("unit", e.target.value)} />
-            </div>
-            <div className="card">
-              <div className="label">Department</div>
-              <input
-                className="input"
-                value={edit.department || ""}
-                onChange={(e) => onChange("department", e.target.value)}
-              />
-            </div>
-
-            <div className="card" style={{ gridColumn: "1 / -1" }}>
-              <div className="label">Summary</div>
-              <input
-                className="input"
-                value={edit.summary || ""}
-                onChange={(e) => onChange("summary", e.target.value)}
-              />
-            </div>
-            <div className="card" style={{ gridColumn: "1 / -1" }}>
-              <div className="label">Details</div>
-              <input
-                className="input"
-                value={edit.details || ""}
-                onChange={(e) => onChange("details", e.target.value)}
-              />
-            </div>
-
-            <div className="card">
-              <div className="label">Operator</div>
-              <input
-                className="input"
-                value={edit.operator || ""}
-                onChange={(e) => onChange("operator", e.target.value)}
-              />
-            </div>
-            <div className="card">
-              <div className="label">Handed Over To</div>
-              <input
-                className="input"
-                value={edit.handed_over_to || ""}
-                onChange={(e) => onChange("handed_over_to", e.target.value)}
-              />
-            </div>
-
-            <div className="card">
-              <div className="label">Load (MW)</div>
-              <input
-                className="input"
-                type="number"
-                step="0.1"
-                value={edit.load_mw ?? ""}
-                onChange={(e) => onChange("load_mw", e.target.value)}
-              />
-            </div>
-            <div className="card">
-              <div className="label">Ambient Temp (°C)</div>
-              <input
-                className="input"
-                type="number"
-                step="0.1"
-                value={edit.ambient_temp_c ?? ""}
-                onChange={(e) => onChange("ambient_temp_c", e.target.value)}
-              />
-            </div>
-
-            <div className="card" style={{ gridColumn: "1 / -1" }}>
-              <div className="label">Params (JSON)</div>
-              <textarea
-                className="input"
-                style={{ height: 160 }}
-                value={edit._paramsText}
-                onChange={(e) => onChange("_paramsText", e.target.value)}
-              />
+            {/* Fixed footer (non-scrolling) */}
+            <div
+              style={{
+                flexShrink: 0,
+                padding: "12px",
+                paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)",
+                background: "rgba(2, 8, 23, 0.92)",
+                backdropFilter: "blur(6px)",
+                borderTop: "1px solid rgba(148,163,184,0.2)",
+                display: "flex",
+                gap: 8,
+                zIndex: 10,
+              }}
+            >
+              <button className="btn" onClick={save} disabled={saving}>{saving ? "Saving…" : "Save"}</button>
+              <button className="btn danger" onClick={removeOne} disabled={deleting}>{deleting ? "Deleting…" : "Delete"}</button>
             </div>
           </div>
         )}
@@ -334,9 +270,5 @@ export default function Logbook() {
 }
 
 function safeParseJSON(s) {
-  try {
-    return JSON.parse(s);
-  } catch {
-    return null;
-  }
+  try { return JSON.parse(s); } catch { return null; }
 }
