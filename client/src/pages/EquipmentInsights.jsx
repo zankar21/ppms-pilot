@@ -1,8 +1,18 @@
-import React, { useMemo, useState } from "react";
+// client/src/pages/EquipmentInsights.jsx
+import React, { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../services/api";
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+} from "recharts";
 
+/* ------------ Data hooks ------------ */
 function useEquipmentList() {
   return useQuery({
     queryKey: ["equipment-list"],
@@ -20,6 +30,7 @@ function useEquipmentInsights(id) {
   });
 }
 
+/* ------------ UI bits ------------ */
 function Select({ value, onChange, options }) {
   return (
     <select className="select" value={value} onChange={(e) => onChange(e.target.value)}>
@@ -43,8 +54,10 @@ function KPICard({ label, value, hint }) {
   );
 }
 
+/* ------------ Page ------------ */
 export default function EquipmentInsightsPage() {
   const [selected, setSelected] = useState("");
+
   const { data: eqList, isLoading: listLoading } = useEquipmentList();
   const { data: insights, isLoading: insLoading } = useEquipmentInsights(selected);
 
@@ -57,6 +70,12 @@ export default function EquipmentInsightsPage() {
     if (risk >= 50) return { text: "Medium", className: "warn" };
     return { text: "Low", className: "" };
   }, [risk]);
+
+  // 👇 Some Android WebViews under-measure charts; this wakes Recharts once.
+  useEffect(() => {
+    const id = setTimeout(() => window.dispatchEvent(new Event("resize")), 60);
+    return () => clearTimeout(id);
+  }, [selected, insights?.series?.length]);
 
   return (
     <div className="p-4 md:p-6">
@@ -79,7 +98,11 @@ export default function EquipmentInsightsPage() {
       {selected && insights && (
         <>
           <div className="grid grid-4" style={{ marginTop: 12 }}>
-            <KPICard label="Breakdowns (window)" value={metrics?.breakdowns} hint={`${insights.windowDays} days`} />
+            <KPICard
+              label="Breakdowns (window)"
+              value={metrics?.breakdowns}
+              hint={`${insights.windowDays} days`}
+            />
             <KPICard label="MTBF (days)" value={metrics?.mtbfDays} />
             <KPICard
               label="Top reason"
@@ -88,25 +111,38 @@ export default function EquipmentInsightsPage() {
             />
             <KPICard
               label="Next 30d failure risk"
-              value={metrics?.nextFailure?.probability != null ? `${metrics.nextFailure.probability}%` : "—"}
+              value={
+                metrics?.nextFailure?.probability != null
+                  ? `${metrics.nextFailure.probability}%`
+                  : "—"
+              }
             />
           </div>
 
+          {/* ---- Chart ---- */}
           <div className="card" style={{ marginTop: 14 }}>
             <div className="badge">Breakdowns per week</div>
-            <div style={{ height: 300, marginTop: 8 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={insights.series || []}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="week" />
-                  <YAxis allowDecimals={false} />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="count" />
-                </LineChart>
-              </ResponsiveContainer>
+            {/* Critical: minWidth:0 so ResponsiveContainer can size inside flex/grid on mobile */}
+            <div style={{ height: 300, marginTop: 8, minWidth: 0 }}>
+              {Array.isArray(insights.series) && insights.series.length ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={insights.series}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="week" />
+                    <YAxis allowDecimals={false} />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="count" />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="muted" style={{ padding: 12 }}>
+                  No breakdowns in this window.
+                </div>
+              )}
             </div>
           </div>
 
+          {/* ---- Actions ---- */}
           <div className="card" style={{ marginTop: 14 }}>
             <div className="badge">Recommended next actions</div>
             <ul style={{ marginTop: 10, paddingLeft: 18 }}>
@@ -116,7 +152,7 @@ export default function EquipmentInsightsPage() {
             </ul>
           </div>
 
-          {/* ✅ Use your table styles so horizontal overflow is contained */}
+          {/* ---- Recent maintenance (responsive table) ---- */}
           <div className="card" style={{ marginTop: 14 }}>
             <div className="badge">Recent maintenance</div>
             <div className="table-responsive" style={{ marginTop: 8 }}>
@@ -148,6 +184,7 @@ export default function EquipmentInsightsPage() {
             )}
           </div>
 
+          {/* ---- Recent logbook ---- */}
           <div className="card" style={{ marginTop: 14 }}>
             <div className="badge">Recent logbook notes</div>
             <ul style={{ marginTop: 8 }}>
