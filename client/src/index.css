@@ -16,7 +16,7 @@
 *{ box-sizing:border-box }
 html,body,#root{ height:100%; min-height:100dvh; }          /* ✅ mobile-correct height */
 @supports (height: 100svh) {
-  html,body,#root{ min-height:100svh; }                      /* ✅ fallback for some browsers */
+  html,body,#root{ min-height:100svh; }                      /* ✅ some browsers prefer svh */
 }
 body{
   margin:0;
@@ -26,7 +26,7 @@ body{
     linear-gradient(180deg, #0b1220 0%, #0b1020 100%);
   color:var(--text);
   font-family: ui-sans-serif, system-ui, Segoe UI, Roboto, Arial;
-  overscroll-behavior-y: none;                               /* avoid rubber banding when drawer open */
+  overscroll-behavior-y: none;                               /* avoid rubber band when drawer open */
 }
 
 /* Layout */
@@ -63,7 +63,7 @@ body{
   box-shadow: 0 0 0 2px #ffffff0e inset, 0 8px 24px #00000066;
 }
 
-/* Nav tabs */
+/* Nav tabs & buttons */
 .tabs{ display:flex; flex-wrap:wrap; gap:8px; }
 .btn{
   appearance:none; border:1px solid var(--border); background:var(--panel);
@@ -133,7 +133,7 @@ body{
 .ask .input{ min-height:40px; }
 .ask .btn{ min-height:40px; }
 
-/* Drawer: CSS variant (if you use class-based drawer somewhere else) */
+/* Drawer: CSS variant (for any class-based drawers elsewhere) */
 .drawer{
   position:fixed; right:0; top:0;
   height:100dvh;                                   /* ✅ mobile-correct */
@@ -145,7 +145,7 @@ body{
   overflow:hidden;                                  /* ✅ child controls scroll */
   z-index:50;
 }
-/* Optional scrolling body if you ever structure drawer as header/body/footer in HTML */
+/* Optional scrolling body if you structure drawer as header/body/footer in HTML */
 .drawer-body{
   height:100%;
   overflow-y:auto;
@@ -154,11 +154,21 @@ body{
   padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
 }
 
-/* Sticky action bar inside drawers (works when the BODY is the scroller) */
+/* ----- Drawer actions (updated) ----- */
+/* Default reset: not sticky unless inside a legacy .drawer-body scrollport */
 .drawer-actions{
+  position: static;
+  display:flex; gap:10px;
+  background: transparent;
+  padding: 0;
+  border-top: 0;
+  backdrop-filter: none;
+  z-index: auto;
+}
+/* Legacy/class-based drawer only (when .drawer-body is the scroller) */
+.drawer-body .drawer-actions{
   position: sticky;
   bottom: 0;
-  display:flex; gap:10px;
   background: linear-gradient(180deg, transparent, var(--panel-strong) 45%);
   padding: 10px 0 calc(10px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--border);
