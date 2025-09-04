@@ -1,9 +1,38 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 export default function Drawer({ open, title, onClose, children, actions = null }) {
   const panelRef = useRef(null);
+  const [vh, setVh] = useState(0);
 
-  // Lock background scroll when open
+  // Measure visual viewport so bottom footer is always inside the screen.
+  useLayoutEffect(() => {
+    if (!open) return;
+
+    const vv = window.visualViewport;
+    const measure = () => {
+      const h = vv?.height ? Math.round(vv.height) : Math.round(window.innerHeight || 0);
+      setVh(h > 0 ? h : 0);
+    };
+    measure();
+
+    vv?.addEventListener?.("resize", measure);
+    vv?.addEventListener?.("scroll", measure);
+    window.addEventListener("resize", measure);
+    window.addEventListener("orientationchange", measure);
+
+    // small safety timer during keyboard animations
+    const tid = setInterval(measure, 250);
+
+    return () => {
+      vv?.removeEventListener?.("resize", measure);
+      vv?.removeEventListener?.("scroll", measure);
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("orientationchange", measure);
+      clearInterval(tid);
+    };
+  }, [open]);
+
+  // Lock background scroll
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
@@ -28,7 +57,7 @@ export default function Drawer({ open, title, onClose, children, actions = null 
         }}
       />
 
-      {/* Panel: header (no scroll) | body (scroll) | footer (no scroll) */}
+      {/* Panel: header | body (scroll) | footer */}
       <aside
         ref={panelRef}
         tabIndex={-1}
@@ -39,8 +68,7 @@ export default function Drawer({ open, title, onClose, children, actions = null 
           position: "fixed",
           top: 0,
           right: 0,
-          height: "100dvh",         // mobile-safe viewport height
-          minHeight: "100vh",
+          height: vh ? `${vh}px` : "100svh",   // use measured px, fallback to 100svh
           width: "min(520px, 92vw)",
           transform: `translateX(${open ? "0" : "100%"})`,
           transition: "transform .25s ease",
@@ -69,11 +97,11 @@ export default function Drawer({ open, title, onClose, children, actions = null 
           <button className="btn" style={{ marginLeft: "auto" }} onClick={onClose}>Close</button>
         </div>
 
-        {/* Scrollable body (the important bits are flex:1 and minHeight:0) */}
+        {/* Scrollable body */}
         <div
           style={{
             flex: "1 1 auto",
-            minHeight: 0,               // ✅ allows this area to shrink and scroll
+            minHeight: 0,                 // critical for scroll
             overflowY: "auto",
             overflowX: "hidden",
             WebkitOverflowScrolling: "touch",
@@ -85,7 +113,7 @@ export default function Drawer({ open, title, onClose, children, actions = null 
           {children}
         </div>
 
-        {/* Fixed footer (if provided) */}
+        {/* Fixed footer */}
         {actions && (
           <div
             style={{
@@ -97,6 +125,7 @@ export default function Drawer({ open, title, onClose, children, actions = null 
               borderTop: "1px solid rgba(148,163,184,0.2)",
               display: "flex",
               gap: 8,
+              zIndex: 1200,
             }}
           >
             {actions}
