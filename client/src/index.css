@@ -14,7 +14,10 @@
 }
 
 *{ box-sizing:border-box }
-html,body,#root{ height:100% }
+html,body,#root{ height:100%; min-height:100dvh; }          /* ✅ mobile-correct height */
+@supports (height: 100svh) {
+  html,body,#root{ min-height:100svh; }                      /* ✅ fallback for some browsers */
+}
 body{
   margin:0;
   background:
@@ -23,6 +26,7 @@ body{
     linear-gradient(180deg, #0b1220 0%, #0b1020 100%);
   color:var(--text);
   font-family: ui-sans-serif, system-ui, Segoe UI, Roboto, Arial;
+  overscroll-behavior-y: none;                               /* avoid rubber banding when drawer open */
 }
 
 /* Layout */
@@ -46,7 +50,10 @@ body{
   background:linear-gradient(180deg, var(--panel), transparent);
   backdrop-filter: blur(8px);
 }
-.main{ grid-area: main; padding:20px; overflow:auto; }
+.main{
+  grid-area: main; padding:20px; overflow:auto;
+  overscroll-behavior: contain;                               /* ✅ prevent background scroll chain */
+}
 
 /* Brand */
 .brand{ display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:.2px; }
@@ -62,6 +69,7 @@ body{
   appearance:none; border:1px solid var(--border); background:var(--panel);
   color:var(--text); padding:8px 12px; border-radius:10px; cursor:pointer;
   transition: all .2s ease; box-shadow: 0 0 0 0px transparent;
+  touch-action: manipulation;                                  /* ✅ mobile tap responsiveness */
 }
 .btn:hover{ box-shadow:0 0 0 3px var(--ring); transform: translateY(-1px); }
 .btn.tab{ width:100%; text-align:left; margin:4px 0; }
@@ -125,20 +133,28 @@ body{
 .ask .input{ min-height:40px; }
 .ask .btn{ min-height:40px; }
 
-/* Drawer: ensure full dynamic viewport height + extra bottom padding for safe area */
+/* Drawer: CSS variant (if you use class-based drawer somewhere else) */
 .drawer{
   position:fixed; right:0; top:0;
-  height:100dvh; /* better on mobile than 100% */
+  height:100dvh;                                   /* ✅ mobile-correct */
   width:420px; max-width:100%;
   background:linear-gradient(180deg, var(--panel-strong), #0b1220);
   border-left:1px solid var(--border);
   box-shadow:-12px 0 30px #0008;
   padding:16px;
-  padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)); /* room for sticky actions */
-  overflow:auto; z-index:50;
+  overflow:hidden;                                  /* ✅ child controls scroll */
+  z-index:50;
+}
+/* Optional scrolling body if you ever structure drawer as header/body/footer in HTML */
+.drawer-body{
+  height:100%;
+  overflow-y:auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
 }
 
-/* Sticky action bar inside drawers */
+/* Sticky action bar inside drawers (works when the BODY is the scroller) */
 .drawer-actions{
   position: sticky;
   bottom: 0;
@@ -235,8 +251,8 @@ hr.hr{ border:0; border-top:1px solid var(--border); margin:10px 0; }
   .btn  { padding: 8px 10px; }
   .input, .select, .textarea { padding: 8px 10px; }
 }
+
 /* Ensures comfortable bottom padding on iOS/Android with gesture bars */
 .pb-safe {
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
 }
-
