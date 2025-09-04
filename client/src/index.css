@@ -157,7 +157,6 @@ body{
 }
 
 /* ----- Drawer actions (updated) ----- */
-/* Default reset: not sticky unless inside a legacy .drawer-body scrollport */
 .drawer-actions{
   position: static;
   display:flex; gap:10px;
@@ -189,8 +188,16 @@ body{
 .recharts-cartesian-axis-tick-value{ fill:var(--muted); font-size:12px; }
 .recharts-text{ fill:var(--muted); }
 .recharts-legend-item-text{ color:var(--muted) !important; }
-/* Ensure the responsive container can actually shrink inside flex/grid parents */
+
+/* Ensure chart containers can actually shrink/grow in flex/grid parents */
 .recharts-responsive-container { min-width: 0 !important; }
+
+/* Recharts: do NOT clamp svg width globally — this can break sizing on mobile webviews */
+.recharts-wrapper,
+.recharts-responsive-container,
+svg.recharts-surface {
+  max-width: none !important;
+}
 
 /* Small helpers */
 hr.hr{ border:0; border-top:1px solid var(--border); margin:10px 0; }
@@ -250,64 +257,28 @@ hr.hr{ border:0; border-top:1px solid var(--border); margin:10px 0; }
 }
 
 /* Scrollable tables on small screens */
-.table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-
-/* Stack big form grids on small screens */
-@media (max-width: 640px) {
-  .responsive-grid-8 { grid-template-columns: 1fr !important; }
-  .responsive-grid-6 { grid-template-columns: 1fr !important; }
-  .responsive-controls { grid-template-columns: 1fr !important; gap: 8px !important; }
+.table-responsive { 
+  display: block; 
+  width: 100%; 
+  overflow-x: auto; 
+  -webkit-overflow-scrolling: touch; 
 }
 
-/* Optional: tighter spacing on very small screens */
-@media (max-width: 420px) {
-  .card { padding: 12px; }
-  .btn  { padding: 8px 10px; }
-  .input, .select, .textarea { padding: 8px 10px; }
-}
-
-/* Ensures comfortable bottom padding on iOS/Android with gesture bars */
-.pb-safe {
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
-}
 /* Prevent page-level horizontal scrolling */
 html, body, .main {
   max-width: 100%;
-  overflow-x: hidden;        /* page never scrolls sideways */
+  overflow-x: hidden;
 }
 
-/* Make wide tables scroll only inside their wrapper */
-.table-responsive {
-  display: block;
-  width: 100%;
-  overflow-x: auto;          /* horizontal scroll lives here */
-  -webkit-overflow-scrolling: touch;
-}
-
-/* Ensure table doesn't force the page to grow wider */
+/* Ensure tables don’t force the page wider; allow wrapper to scroll */
 .table-responsive > .table {
-  width: max-content;        /* size to content */
-  min-width: 640px;          /* feel free to adjust */
-  max-width: none;
-}
-
-/* Safety: charts or other canvases shouldn't overflow the page */
-.recharts-wrapper,
-canvas,
-svg {
-  max-width: 100%;
-}
-
-/* Optional: cards shouldn’t leak shadows/rounded corners off-screen */
-.card {
-  overflow: hidden;
-}
-/* Don’t force scroll if the table is small */
-.table-responsive > .table{
   width: max-content;
-  min-width: min(640px, 100%);   /* was 640px — this avoids forcing h-scroll on narrow tables */
+  min-width: min(640px, 100%);   /* avoids forcing h-scroll on narrow screens */
+  max-width: none;
 }
 
 /* Guard against long strings/numbers expanding cells */
 .table td, .table th { word-break: break-word; }
 
+/* Optional: cards shouldn’t leak shadows/rounded corners off-screen */
+.card { overflow: hidden; }
