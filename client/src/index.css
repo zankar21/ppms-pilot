@@ -189,6 +189,8 @@ body{
 .recharts-cartesian-axis-tick-value{ fill:var(--muted); font-size:12px; }
 .recharts-text{ fill:var(--muted); }
 .recharts-legend-item-text{ color:var(--muted) !important; }
+/* Ensure the responsive container can actually shrink inside flex/grid parents */
+.recharts-responsive-container { min-width: 0 !important; }
 
 /* Small helpers */
 hr.hr{ border:0; border-top:1px solid var(--border); margin:10px 0; }
