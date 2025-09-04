@@ -124,6 +124,8 @@ body{
   display:inline-block; padding:4px 8px; border-radius:999px; font-size:11px;
   background:#0b1220; border:1px solid var(--border); color:var(--muted);
 }
+.badge.warn   { border-color:#7a4f0a; color:#f59e0b; }
+.badge.danger { border-color:#7a1d1d; color:#ef4444; }
 
 /* Toggle */
 .toggle{ display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none; }

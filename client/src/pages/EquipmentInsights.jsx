@@ -15,7 +15,8 @@ function useEquipmentInsights(id) {
   return useQuery({
     queryKey: ["equipment-insights", id],
     enabled: !!id,
-    queryFn: async () => (await api.get(`/api/equipment/${id}/insights?windowDays=180&futureDays=30`)).data,
+    queryFn: async () =>
+      (await api.get(`/api/equipment/${id}/insights?windowDays=180&futureDays=30`)).data,
   });
 }
 
@@ -52,20 +53,26 @@ export default function EquipmentInsightsPage() {
 
   const risk = metrics?.riskScore ?? 0;
   const riskBadge = useMemo(() => {
-    if (risk >= 80) return { text: "High", className: "badge danger" };
-    if (risk >= 50) return { text: "Medium", className: "badge warn" };
-    return { text: "Low", className: "badge" };
+    if (risk >= 80) return { text: "High", className: "danger" };
+    if (risk >= 50) return { text: "Medium", className: "warn" };
+    return { text: "Low", className: "" };
   }, [risk]);
 
   return (
     <div className="p-4 md:p-6">
       <h1 className="text-2xl font-bold">Equipment Insights</h1>
-      <div className="flex items-center gap-2" style={{ marginTop: 10 }}>
-        {listLoading ? <span className="muted">Loading equipment…</span> :
-          <Select value={selected} onChange={setSelected} options={rows} />}
+
+      <div className="flex items-center gap-2" style={{ marginTop: 10, flexWrap: "wrap" }}>
+        {listLoading ? (
+          <span className="muted">Loading equipment…</span>
+        ) : (
+          <Select value={selected} onChange={setSelected} options={rows} />
+        )}
         {insLoading && selected ? <span className="muted">Loading insights…</span> : null}
         {selected && insights?.equipment && (
-          <span className={`badge ${riskBadge.className}`}>{insights.equipment.name || insights.equipment.code} · {riskBadge.text} risk</span>
+          <span className={`badge ${riskBadge.className}`}>
+            {insights.equipment.name || insights.equipment.code} · {riskBadge.text} risk
+          </span>
         )}
       </div>
 
@@ -74,8 +81,15 @@ export default function EquipmentInsightsPage() {
           <div className="grid grid-4" style={{ marginTop: 12 }}>
             <KPICard label="Breakdowns (window)" value={metrics?.breakdowns} hint={`${insights.windowDays} days`} />
             <KPICard label="MTBF (days)" value={metrics?.mtbfDays} />
-            <KPICard label="Top reason" value={metrics?.topReason?.text || "—"} hint={`count: ${metrics?.topReason?.count || 0}`} />
-            <KPICard label="Next 30d failure risk" value={metrics?.nextFailure?.probability != null ? `${metrics.nextFailure.probability}%` : "—"} />
+            <KPICard
+              label="Top reason"
+              value={metrics?.topReason?.text || "—"}
+              hint={`count: ${metrics?.topReason?.count || 0}`}
+            />
+            <KPICard
+              label="Next 30d failure risk"
+              value={metrics?.nextFailure?.probability != null ? `${metrics.nextFailure.probability}%` : "—"}
+            />
           </div>
 
           <div className="card" style={{ marginTop: 14 }}>
@@ -96,39 +110,42 @@ export default function EquipmentInsightsPage() {
           <div className="card" style={{ marginTop: 14 }}>
             <div className="badge">Recommended next actions</div>
             <ul style={{ marginTop: 10, paddingLeft: 18 }}>
-              {(insights.actions || []).map((a, i) => <li key={i}>{a}</li>)}
+              {(insights.actions || []).map((a, i) => (
+                <li key={i}>{a}</li>
+              ))}
             </ul>
           </div>
 
+          {/* ✅ Use your table styles so horizontal overflow is contained */}
           <div className="card" style={{ marginTop: 14 }}>
             <div className="badge">Recent maintenance</div>
-            <div className="overflow-x-auto" style={{ marginTop: 8 }}>
-              <table className="w-full text-sm">
+            <div className="table-responsive" style={{ marginTop: 8 }}>
+              <table className="table">
                 <thead>
-                  <tr className="text-left">
-                    <th className="p-2">When</th>
-                    <th className="p-2">Type</th>
-                    <th className="p-2">Reason</th>
-                    <th className="p-2">Downtime</th>
-                    <th className="p-2">Severity</th>
+                  <tr>
+                    <th>When</th>
+                    <th>Type</th>
+                    <th>Reason</th>
+                    <th>Downtime</th>
+                    <th>Severity</th>
                   </tr>
                 </thead>
                 <tbody>
                   {(insights.recent || []).map((r, idx) => (
-                    <tr key={idx} className="border-t">
-                      <td className="p-2">{new Date(r.when).toLocaleString()}</td>
-                      <td className="p-2">{r.type}</td>
-                      <td className="p-2">{r.reason || "—"}</td>
-                      <td className="p-2">{r.downtimeMins} min</td>
-                      <td className="p-2">{r.severity || 0}</td>
+                    <tr key={idx}>
+                      <td>{new Date(r.when).toLocaleString()}</td>
+                      <td>{r.type}</td>
+                      <td style={{ wordBreak: "break-word" }}>{r.reason || "—"}</td>
+                      <td>{r.downtimeMins} min</td>
+                      <td>{r.severity || 0}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              {(!insights.recent || insights.recent.length === 0) && (
-                <div className="muted p-3">No maintenance records in the window.</div>
-              )}
             </div>
+            {(!insights.recent || insights.recent.length === 0) && (
+              <div className="muted p-3">No maintenance records in the window.</div>
+            )}
           </div>
 
           <div className="card" style={{ marginTop: 14 }}>
