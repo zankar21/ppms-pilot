@@ -24,7 +24,7 @@ export default function Drawer({ open, title, onClose, children, actions = null 
         }}
       />
 
-      {/* Panel = header | scroll | footer (no sticky) */}
+      {/* Panel = header | scroll | footer */}
       <aside
         ref={panelRef}
         tabIndex={-1}
@@ -57,10 +57,13 @@ export default function Drawer({ open, title, onClose, children, actions = null 
           <button className="btn" style={{ marginLeft: "auto" }} onClick={onClose}>Close</button>
         </div>
 
-        {/* Scroll area */}
+        {/* Scroll area (the crucial fix is minHeight: 0) */}
         <div
           style={{
+            minHeight: 0,             // ✅ allows the 1fr track to shrink and scroll
+            maxHeight: "100%",
             overflowY: "auto",
+            overflowX: "hidden",
             WebkitOverflowScrolling: "touch",
             overscrollBehavior: "contain",
             padding: 12,
