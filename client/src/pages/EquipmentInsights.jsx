@@ -1,18 +1,11 @@
 // client/src/pages/EquipmentInsights.jsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../services/api";
-import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-} from "recharts";
+import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
-/* ------------ Data hooks ------------ */
+/* ---------------- Hooks ---------------- */
+
 function useEquipmentList() {
   return useQuery({
     queryKey: ["equipment-list"],
@@ -30,7 +23,36 @@ function useEquipmentInsights(id) {
   });
 }
 
-/* ------------ UI bits ------------ */
+/** Observe an element’s content box size (works on mobile WebViews). */
+function useMeasure() {
+  const ref = useRef(null);
+  const [size, setSize] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    // Fallback for very old webviews: set an initial width
+    setSize({ width: el.clientWidth || window.innerWidth, height: el.clientHeight || 0 });
+
+    // ResizeObserver is widely supported on Android/iOS webviews now
+    const ro = new ResizeObserver((entries) => {
+      const cr = entries[0]?.contentRect;
+      if (!cr) return;
+      // Round to integers to avoid re-renders from sub-pixel jitter
+      const w = Math.max(0, Math.round(cr.width));
+      const h = Math.max(0, Math.round(cr.height));
+      setSize((prev) => (prev.width !== w || prev.height !== h ? { width: w, height: h } : prev));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  return [ref, size];
+}
+
+/* ---------------- UI bits ---------------- */
+
 function Select({ value, onChange, options }) {
   return (
     <select className="select" value={value} onChange={(e) => onChange(e.target.value)}>
@@ -54,7 +76,8 @@ function KPICard({ label, value, hint }) {
   );
 }
 
-/* ------------ Page ------------ */
+/* ---------------- Page ---------------- */
+
 export default function EquipmentInsightsPage() {
   const [selected, setSelected] = useState("");
 
@@ -63,6 +86,7 @@ export default function EquipmentInsightsPage() {
 
   const rows = eqList?.rows || [];
   const metrics = insights?.metrics;
+  const series = Array.isArray(insights?.series) ? insights.series : [];
 
   const risk = metrics?.riskScore ?? 0;
   const riskBadge = useMemo(() => {
@@ -71,11 +95,15 @@ export default function EquipmentInsightsPage() {
     return { text: "Low", className: "" };
   }, [risk]);
 
-  // 👇 Some Android WebViews under-measure charts; this wakes Recharts once.
+  // Nudge layout once after load (helps some webviews initialize measurements)
   useEffect(() => {
-    const id = setTimeout(() => window.dispatchEvent(new Event("resize")), 60);
+    const id = setTimeout(() => window.dispatchEvent(new Event("resize")), 80);
     return () => clearTimeout(id);
-  }, [selected, insights?.series?.length]);
+  }, [selected, series.length]);
+
+  // Chart sizing driven by ResizeObserver instead of ResponsiveContainer
+  const [chartRef, chartSize] = useMeasure();
+  const chartHeight = 300;
 
   return (
     <div className="p-4 md:p-6">
@@ -119,26 +147,32 @@ export default function EquipmentInsightsPage() {
             />
           </div>
 
-          {/* ---- Chart ---- */}
+          {/* ---- Chart (ResizeObserver-driven) ---- */}
           <div className="card" style={{ marginTop: 14 }}>
             <div className="badge">Breakdowns per week</div>
-            {/* Critical: minWidth:0 so ResponsiveContainer can size inside flex/grid on mobile */}
-            <div style={{ height: 300, marginTop: 8, minWidth: 0 }}>
-              {Array.isArray(insights.series) && insights.series.length ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={insights.series}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="week" />
-                    <YAxis allowDecimals={false} />
-                    <Tooltip />
-                    <Line type="monotone" dataKey="count" />
-                  </LineChart>
-                </ResponsiveContainer>
-              ) : (
+            <div
+              ref={chartRef}
+              // minWidth:0 is important in flex/grid; gives the box a measurable width
+              style={{ height: chartHeight, marginTop: 8, width: "100%", minWidth: 0 }}
+            >
+              {series.length === 0 ? (
                 <div className="muted" style={{ padding: 12 }}>
                   No breakdowns in this window.
                 </div>
-              )}
+              ) : chartSize.width > 0 ? (
+                <LineChart
+                  width={chartSize.width}
+                  height={chartHeight}
+                  data={series.map((d) => ({ ...d, count: Number(d.count) || 0 }))}
+                  margin={{ top: 8, right: 8, bottom: 8, left: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="week" />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="count" stroke="#22d3ee" strokeWidth={2} dot={false} />
+                </LineChart>
+              ) : null}
             </div>
           </div>
 
