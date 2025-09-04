@@ -235,3 +235,8 @@ hr.hr{ border:0; border-top:1px solid var(--border); margin:10px 0; }
   .btn  { padding: 8px 10px; }
   .input, .select, .textarea { padding: 8px 10px; }
 }
+/* Ensures comfortable bottom padding on iOS/Android with gesture bars */
+.pb-safe {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+}
+

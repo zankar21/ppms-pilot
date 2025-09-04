@@ -250,168 +250,183 @@ export default function Maintenance() {
       {/* drawer */}
       <Drawer open={open} title="Maintenance Details" onClose={() => setOpen(false)}>
         {!edit ? null : (
-          <>
-            {/* Scrollable content with bottom space so it doesn't hide behind sticky footer */}
+          // 🔒 Robust mobile layout: body scrolls, footer fixed
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              height: "100%",
+              maxHeight: "100dvh",
+            }}
+          >
+            {/* Scrollable content */}
             <div
-              className="grid grid-2"
               style={{
-                paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 96px)", // reserve space for footer
-                gap: 12,
+                flex: 1,
+                overflowY: "auto",
+                WebkitOverflowScrolling: "touch",
+                padding: 12,
+                paddingBottom: 16,
               }}
             >
-              <div className="card">
-                <div className="label">Type</div>
-                <select className="select" value={edit.type} onChange={(e) => onChange("type", e.target.value)}>
-                  <option>PM</option>
-                  <option>CM</option>
-                  <option>BD</option>
-                </select>
-              </div>
-              <div className="card">
-                <div className="label">Status</div>
-                <select
-                  className="select"
-                  value={edit.status || "Open"}
-                  onChange={(e) => onChange("status", e.target.value)}
-                >
-                  <option>Open</option>
-                  <option>In-Progress</option>
-                  <option>Completed</option>
-                  <option>Deferred</option>
-                </select>
-              </div>
+              <div
+                className="grid grid-2"
+                style={{
+                  gap: 12,
+                }}
+              >
+                <div className="card">
+                  <div className="label">Type</div>
+                  <select className="select" value={edit.type} onChange={(e) => onChange("type", e.target.value)}>
+                    <option>PM</option>
+                    <option>CM</option>
+                    <option>BD</option>
+                  </select>
+                </div>
+                <div className="card">
+                  <div className="label">Status</div>
+                  <select
+                    className="select"
+                    value={edit.status || "Open"}
+                    onChange={(e) => onChange("status", e.target.value)}
+                  >
+                    <option>Open</option>
+                    <option>In-Progress</option>
+                    <option>Completed</option>
+                    <option>Deferred</option>
+                  </select>
+                </div>
 
-              <div className="card">
-                <div className="label">Unit</div>
-                <input className="input" value={edit.unit || ""} onChange={(e) => onChange("unit", e.target.value)} />
-              </div>
-              <div className="card">
-                <div className="label">Department</div>
-                <input
-                  className="input"
-                  value={edit.department || ""}
-                  onChange={(e) => onChange("department", e.target.value)}
-                />
-              </div>
+                <div className="card">
+                  <div className="label">Unit</div>
+                  <input className="input" value={edit.unit || ""} onChange={(e) => onChange("unit", e.target.value)} />
+                </div>
+                <div className="card">
+                  <div className="label">Department</div>
+                  <input
+                    className="input"
+                    value={edit.department || ""}
+                    onChange={(e) => onChange("department", e.target.value)}
+                  />
+                </div>
 
-              <div className="card">
-                <div className="label">Equipment Tag</div>
-                <input
-                  className="input"
-                  value={edit.equipment_tag || ""}
-                  onChange={(e) => onChange("equipment_tag", e.target.value)}
-                />
-              </div>
-              <div className="card">
-                <div className="label">Technician</div>
-                <input
-                  className="input"
-                  value={edit.technician || ""}
-                  onChange={(e) => onChange("technician", e.target.value)}
-                />
-              </div>
+                <div className="card">
+                  <div className="label">Equipment Tag</div>
+                  <input
+                    className="input"
+                    value={edit.equipment_tag || ""}
+                    onChange={(e) => onChange("equipment_tag", e.target.value)}
+                  />
+                </div>
+                <div className="card">
+                  <div className="label">Technician</div>
+                  <input
+                    className="input"
+                    value={edit.technician || ""}
+                    onChange={(e) => onChange("technician", e.target.value)}
+                  />
+                </div>
 
-              <div className="card">
-                <div className="label">Work Order ID</div>
-                <input
-                  className="input"
-                  value={edit.work_order_id || ""}
-                  onChange={(e) => onChange("work_order_id", e.target.value)}
-                />
-              </div>
-              <div className="card">
-                <div className="label">Labor (hrs)</div>
-                <input
-                  className="input"
-                  type="number"
-                  step="0.1"
-                  value={edit.labor_hrs ?? ""}
-                  onChange={(e) => onChange("labor_hrs", e.target.value)}
-                />
-              </div>
+                <div className="card">
+                  <div className="label">Work Order ID</div>
+                  <input
+                    className="input"
+                    value={edit.work_order_id || ""}
+                    onChange={(e) => onChange("work_order_id", e.target.value)}
+                  />
+                </div>
+                <div className="card">
+                  <div className="label">Labor (hrs)</div>
+                  <input
+                    className="input"
+                    type="number"
+                    step="0.1"
+                    value={edit.labor_hrs ?? ""}
+                    onChange={(e) => onChange("labor_hrs", e.target.value)}
+                  />
+                </div>
 
-              <div className="card">
-                <div className="label">Down Start</div>
-                <input
-                  className="input"
-                  type="datetime-local"
-                  value={edit.down_start || ""}
-                  onChange={(e) => onChange("down_start", e.target.value)}
-                />
-              </div>
-              <div className="card">
-                <div className="label">Down End</div>
-                <input
-                  className="input"
-                  type="datetime-local"
-                  value={edit.down_end || ""}
-                  onChange={(e) => onChange("down_end", e.target.value)}
-                />
-              </div>
+                <div className="card">
+                  <div className="label">Down Start</div>
+                  <input
+                    className="input"
+                    type="datetime-local"
+                    value={edit.down_start || ""}
+                    onChange={(e) => onChange("down_start", e.target.value)}
+                  />
+                </div>
+                <div className="card">
+                  <div className="label">Down End</div>
+                  <input
+                    className="input"
+                    type="datetime-local"
+                    value={edit.down_end || ""}
+                    onChange={(e) => onChange("down_end", e.target.value)}
+                  />
+                </div>
 
-              <div className="card">
-                <div className="label">Fault</div>
-                <input className="input" value={edit.fault || ""} onChange={(e) => onChange("fault", e.target.value)} />
-              </div>
-              <div className="card">
-                <div className="label">Cause</div>
-                <input className="input" value={edit.cause || ""} onChange={(e) => onChange("cause", e.target.value)} />
-              </div>
+                <div className="card">
+                  <div className="label">Fault</div>
+                  <input className="input" value={edit.fault || ""} onChange={(e) => onChange("fault", e.target.value)} />
+                </div>
+                <div className="card">
+                  <div className="label">Cause</div>
+                  <input className="input" value={edit.cause || ""} onChange={(e) => onChange("cause", e.target.value)} />
+                </div>
 
-              <div className="card">
-                <div className="label">Remedy</div>
-                <input className="input" value={edit.remedy || ""} onChange={(e) => onChange("remedy", e.target.value)} />
-              </div>
-              <div className="card">
-                <div className="label">Parts Used (PART:QTY, …)</div>
-                <input
-                  className="input"
-                  value={edit._parts_text || ""}
-                  onChange={(e) => onChange("_parts_text", e.target.value)}
-                  placeholder="BEARING-6205:2, OIL-68:10"
-                />
-              </div>
+                <div className="card">
+                  <div className="label">Remedy</div>
+                  <input className="input" value={edit.remedy || ""} onChange={(e) => onChange("remedy", e.target.value)} />
+                </div>
+                <div className="card">
+                  <div className="label">Parts Used (PART:QTY, …)</div>
+                  <input
+                    className="input"
+                    value={edit._parts_text || ""}
+                    onChange={(e) => onChange("_parts_text", e.target.value)}
+                    placeholder="BEARING-6205:2, OIL-68:10"
+                  />
+                </div>
 
-              <div className="card">
-                <div className="label">Cost Estimate</div>
-                <input
-                  className="input"
-                  type="number"
-                  step="0.01"
-                  value={edit.cost_estimate ?? ""}
-                  onChange={(e) => onChange("cost_estimate", e.target.value)}
-                />
-              </div>
-              <div className="card">
-                <div className="label">Cost Actual</div>
-                <input
-                  className="input"
-                  type="number"
-                  step="0.01"
-                  value={edit.cost_actual ?? ""}
-                  onChange={(e) => onChange("cost_actual", e.target.value)}
-                />
-              </div>
+                <div className="card">
+                  <div className="label">Cost Estimate</div>
+                  <input
+                    className="input"
+                    type="number"
+                    step="0.01"
+                    value={edit.cost_estimate ?? ""}
+                    onChange={(e) => onChange("cost_estimate", e.target.value)}
+                  />
+                </div>
+                <div className="card">
+                  <div className="label">Cost Actual</div>
+                  <input
+                    className="input"
+                    type="number"
+                    step="0.01"
+                    value={edit.cost_actual ?? ""}
+                    onChange={(e) => onChange("cost_actual", e.target.value)}
+                  />
+                </div>
 
-              <div className="card" style={{ gridColumn: "1 / -1" }}>
-                <div className="label">Remarks</div>
-                <input
-                  className="input"
-                  value={edit.remarks || ""}
-                  onChange={(e) => onChange("remarks", e.target.value)}
-                />
+                <div className="card" style={{ gridColumn: "1 / -1" }}>
+                  <div className="label">Remarks</div>
+                  <input
+                    className="input"
+                    value={edit.remarks || ""}
+                    onChange={(e) => onChange("remarks", e.target.value)}
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Sticky footer action bar (always visible on mobile) */}
+            {/* Non-scrolling footer (always visible) */}
             <div
-              className="drawer-actions"
               style={{
-                position: "sticky",
-                bottom: 0,
+                flexShrink: 0,
                 padding: "12px",
                 paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)",
-                background: "rgba(2, 8, 23, 0.92)", // dark glass
+                background: "rgba(2, 8, 23, 0.92)",
                 backdropFilter: "blur(6px)",
                 borderTop: "1px solid rgba(148,163,184,0.2)",
                 display: "flex",
@@ -426,7 +441,7 @@ export default function Maintenance() {
                 {deleting ? "Deleting…" : "Delete"}
               </button>
             </div>
-          </>
+          </div>
         )}
       </Drawer>
     </>
