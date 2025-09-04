@@ -266,3 +266,44 @@ hr.hr{ border:0; border-top:1px solid var(--border); margin:10px 0; }
 .pb-safe {
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
 }
+/* Prevent page-level horizontal scrolling */
+html, body, .main {
+  max-width: 100%;
+  overflow-x: hidden;        /* page never scrolls sideways */
+}
+
+/* Make wide tables scroll only inside their wrapper */
+.table-responsive {
+  display: block;
+  width: 100%;
+  overflow-x: auto;          /* horizontal scroll lives here */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Ensure table doesn't force the page to grow wider */
+.table-responsive > .table {
+  width: max-content;        /* size to content */
+  min-width: 640px;          /* feel free to adjust */
+  max-width: none;
+}
+
+/* Safety: charts or other canvases shouldn't overflow the page */
+.recharts-wrapper,
+canvas,
+svg {
+  max-width: 100%;
+}
+
+/* Optional: cards shouldn’t leak shadows/rounded corners off-screen */
+.card {
+  overflow: hidden;
+}
+/* Don’t force scroll if the table is small */
+.table-responsive > .table{
+  width: max-content;
+  min-width: min(640px, 100%);   /* was 640px — this avoids forcing h-scroll on narrow tables */
+}
+
+/* Guard against long strings/numbers expanding cells */
+.table td, .table th { word-break: break-word; }
+
