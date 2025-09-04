@@ -20,8 +20,8 @@ function useEquipmentInsights(id) {
   });
 }
 
-/* ---------------- robust size hook ---------------- */
-function useElementSize() {
+/* ---------------- bullet-proof size hook ---------------- */
+function useBulletproofSize(deps = []) {
   const ref = useRef(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
 
@@ -30,30 +30,45 @@ function useElementSize() {
     if (!el) return;
 
     let rafId = 0;
-    const readWidth = () => {
-      // try element width
-      let w = el.clientWidth || 0;
-      if (!w) w = Math.round(el.getBoundingClientRect().width || 0);
-      // final fallback: parent width
+    let tries = 0;
+
+    const compute = () => {
+      let w = el.clientWidth || Math.round(el.getBoundingClientRect().width || 0);
       if (!w && el.parentElement) {
-        w = el.parentElement.clientWidth || Math.round(el.parentElement.getBoundingClientRect().width || 0);
+        const p = el.parentElement;
+        w = p.clientWidth || Math.round(p.getBoundingClientRect().width || 0);
+      }
+      // ultimate fallback: viewport width minus some padding
+      if (!w && typeof window !== "undefined") {
+        w = Math.max(320, Math.round((window.innerWidth || 0) - 48));
       }
       const h = el.clientHeight || 0;
       return { w, h };
     };
 
     const measure = () => {
-      const { w, h } = readWidth();
-      setSize((p) => (p.width !== w || p.height !== h ? { width: w, height: h } : p));
-      if (!w) rafId = requestAnimationFrame(measure); // keep trying until layout stabilizes
+      const { w, h } = compute();
+      setSize((prev) => (prev.width !== w || prev.height !== h ? { width: w, height: h } : prev));
+
+      // If element/parents still report 0, retry a few frames
+      if (w <= 0 && tries < 10) {
+        tries += 1;
+        rafId = requestAnimationFrame(measure);
+      }
     };
 
     measure();
 
-    const ro = new ResizeObserver(measure);
+    const ro = new ResizeObserver(() => {
+      tries = 0;
+      measure();
+    });
     ro.observe(el);
 
-    const onResize = () => measure();
+    const onResize = () => {
+      tries = 0;
+      measure();
+    };
     window.addEventListener("resize", onResize);
     window.addEventListener("orientationchange", onResize);
 
@@ -63,7 +78,8 @@ function useElementSize() {
       window.removeEventListener("orientationchange", onResize);
       if (rafId) cancelAnimationFrame(rafId);
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
 
   return [ref, size];
 }
@@ -110,7 +126,8 @@ export default function EquipmentInsightsPage() {
     return { text: "Low", className: "" };
   }, [risk]);
 
-  const [hostRef, hostSize] = useElementSize();
+  // Re-measure when the chart appears or the selection/insights change
+  const [hostRef, hostSize] = useBulletproofSize([selected, insights?.series?.length]);
   const chartHeight = 300;
 
   return (
@@ -157,13 +174,11 @@ export default function EquipmentInsightsPage() {
               }}
             >
               {series.length === 0 ? (
-                <div className="muted" style={{ padding: 12 }}>
-                  No breakdowns in this window.
-                </div>
-              ) : hostSize.width > 0 ? (
+                <div className="muted" style={{ padding: 12 }}>No breakdowns in this window.</div>
+              ) : (
                 <LineChart
-                  key={`w${hostSize.width}-n${series.length}`}
-                  width={hostSize.width}
+                  // width fallback is guaranteed >= 320 now
+                  width={hostSize.width || 320}
                   height={chartHeight}
                   data={series}
                   margin={{ top: 8, right: 8, bottom: 8, left: 0 }}
@@ -174,8 +189,6 @@ export default function EquipmentInsightsPage() {
                   <Tooltip />
                   <Line type="monotone" dataKey="count" stroke="#22d3ee" strokeWidth={2} dot={false} />
                 </LineChart>
-              ) : (
-                <div className="muted" style={{ padding: 12 }}>Measuring…</div>
               )}
             </div>
           </div>
