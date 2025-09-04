@@ -26,7 +26,16 @@ function Section({ title, children, right = null }) {
   );
 }
 
-function TextInput({ label, value, onChange, type = "text", placeholder = "", required = false }) {
+function TextInput({
+  label,
+  value,
+  onChange,
+  type = "text",
+  placeholder = "",
+  required = false,
+  name,
+  autoComplete = "off",
+}) {
   return (
     <label className="grid gap-1">
       <span className="text-sm text-slate-600 dark:text-slate-300">{label}</span>
@@ -37,6 +46,8 @@ function TextInput({ label, value, onChange, type = "text", placeholder = "", re
         value={value}
         onChange={(e) => onChange(e.target.value)}
         required={required}
+        name={name}
+        autoComplete={autoComplete}
       />
     </label>
   );
@@ -108,15 +119,49 @@ function CreateUserForm() {
     <div className="p-4">
       <form
         className="grid gap-4 md:grid-cols-2"
+        autoComplete="off" // prevent browser/password manager autofill on admin create form
         onSubmit={(e) => {
           e.preventDefault();
           create.mutate();
         }}
       >
-        <TextInput label="Name" value={name} onChange={setName} placeholder="Jane Doe" required />
-        <TextInput label="Email" value={email} onChange={setEmail} placeholder="jane@company.com" required />
-        <TextInput label="Temporary password" type="password" value={password} onChange={setPassword} required />
+        {/* Decoy fields to satisfy aggressive password managers */}
+        <input type="text" name="fake-username" autoComplete="username" className="hidden" readOnly />
+        <input type="password" name="fake-password" autoComplete="current-password" className="hidden" readOnly />
+
+        <TextInput
+          label="Name"
+          value={name}
+          onChange={setName}
+          placeholder="Jane Doe"
+          required
+          name="create-name"
+          autoComplete="off"
+        />
+
+        <TextInput
+          label="Email"
+          type="email"
+          value={email}
+          onChange={setEmail}
+          placeholder="jane@company.com"
+          required
+          name="create-email"          // unique name so managers don’t map “username”
+          autoComplete="off"           // turn off autofill for this field
+        />
+
+        <TextInput
+          label="Temporary password"
+          type="password"
+          value={password}
+          onChange={setPassword}
+          required
+          name="create-temp-password"  // unique name so managers don’t map “password”
+          autoComplete="new-password"  // explicitly tell browser this is a NEW password
+        />
+
         <Select label="Role" value={role} onChange={setRole} options={ROLES} />
+
         <div className="md:col-span-2 flex items-center gap-2">
           <button
             type="submit"

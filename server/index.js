@@ -77,8 +77,8 @@ app.use("/api/search",      requireAuth(["operator", "engineer", "admin"]), sear
 app.use("/api/anomaly",     requireAuth(["operator", "engineer", "admin"]), anomalyRoutes);
 app.use("/api/insights",    requireAuth(["operator", "engineer", "admin"]), insightsRoutes);
 
-// Bulk CSV uploads — restrict to engineer/admin
-app.use("/api/upload",      requireAuth(["engineer", "admin"]), uploadRoutes);
+// allow operator to upload *only* logbook (enforced inside route), others as before
+ app.use("/api/upload",     requireAuth(["operator","engineer","admin"]), uploadRoutes);
 
 // Admin-only
 app.use("/api/users",       requireAuth(["admin"]), usersRoutes);
