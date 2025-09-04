@@ -1,8 +1,16 @@
 // client/src/pages/EquipmentInsights.jsx
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../services/api";
-import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+} from "recharts";
 
 /* ---------- data hooks ---------- */
 function useEquipmentList() {
@@ -19,43 +27,6 @@ function useEquipmentInsights(id) {
     queryFn: async () =>
       (await api.get(`/api/equipment/${id}/insights?windowDays=180&futureDays=30`)).data,
   });
-}
-
-/* ---------- sizing helpers ---------- */
-function useWindowWidth() {
-  const [w, setW] = useState(
-    typeof window !== "undefined" ? window.innerWidth : 0
-  );
-  useEffect(() => {
-    const onResize = () => setW(window.innerWidth || 0);
-    window.addEventListener("resize", onResize);
-    window.addEventListener("orientationchange", onResize);
-    return () => {
-      window.removeEventListener("resize", onResize);
-      window.removeEventListener("orientationchange", onResize);
-    };
-  }, []);
-  return w;
-}
-
-function useMeasuredWidth() {
-  const ref = useRef(null);
-  const [width, setWidth] = useState(0);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    // Initial sync measure (for webviews where RO fires late)
-    setWidth(el.clientWidth || 0);
-
-    const ro = new ResizeObserver(([entry]) => {
-      const w = Math.round(entry?.contentRect?.width || 0);
-      if (w !== width) setWidth(w);
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  return [ref, width];
 }
 
 /* ---------- small UI bits ---------- */
@@ -98,19 +69,6 @@ export default function EquipmentInsightsPage() {
     return { text: "Low", className: "" };
   }, [risk]);
 
-  // chart sizing
-  const [hostRef, measuredWidth] = useMeasuredWidth();
-  const winWidth = useWindowWidth();
-  const chartWidth = Math.max(measuredWidth, Math.min(winWidth - 32, 1200)); // fallback if RO reports 0
-  const chartHeight = 300;
-
-  // nudge layout shortly after data arrives (helps some old webviews)
-  useEffect(() => {
-    if (!series.length) return;
-    const id = setTimeout(() => window.dispatchEvent(new Event("resize")), 60);
-    return () => clearTimeout(id);
-  }, [series.length]);
-
   return (
     <div className="p-4 md:p-6">
       <h1 className="text-2xl font-bold">Equipment Insights</h1>
@@ -135,38 +93,32 @@ export default function EquipmentInsightsPage() {
             <KPICard label="Breakdowns (window)" value={metrics?.breakdowns} hint={`${insights.windowDays} days`} />
             <KPICard label="MTBF (days)" value={metrics?.mtbfDays} />
             <KPICard label="Top reason" value={metrics?.topReason?.text || "—"} hint={`count: ${metrics?.topReason?.count || 0}`} />
-            <KPICard label="Next 30d failure risk" value={metrics?.nextFailure?.probability != null ? `${metrics.nextFailure.probability}%` : "—"} />
+            <KPICard
+              label="Next 30d failure risk"
+              value={metrics?.nextFailure?.probability != null ? `${metrics.nextFailure.probability}%` : "—"}
+            />
           </div>
 
-          {/* Chart */}
+          {/* Chart (ResponsiveContainer handles mobile widths) */}
           <div className="card" style={{ marginTop: 14 }}>
             <div className="badge">Breakdowns per week</div>
-            <div
-              ref={hostRef}
-              style={{
-                width: "100%",
-                minWidth: 1,      // critical for flex/grid parents on mobile
-                height: chartHeight,
-                marginTop: 8,
-              }}
-            >
+            <div style={{ width: "100%", height: 300, marginTop: 8, minWidth: 1 }}>
               {series.length === 0 ? (
                 <div className="muted" style={{ padding: 12 }}>No breakdowns in this window.</div>
-              ) : chartWidth > 0 ? (
-                <LineChart
-                  key={chartWidth}              // force re-render when width changes
-                  width={chartWidth}
-                  height={chartHeight}
-                  data={series.map((d) => ({ ...d, count: Number(d.count) || 0 }))}
-                  margin={{ top: 8, right: 8, bottom: 8, left: 0 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="week" />
-                  <YAxis allowDecimals={false} />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="count" stroke="#22d3ee" strokeWidth={2} dot={false} />
-                </LineChart>
-              ) : null}
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={series.map((d) => ({ ...d, count: Number(d.count) || 0 }))}
+                    margin={{ top: 8, right: 8, bottom: 8, left: 0 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="week" />
+                    <YAxis allowDecimals={false} />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="count" stroke="#22d3ee" strokeWidth={2} dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </div>
 
