@@ -1,50 +1,56 @@
 import React, { useEffect, useRef } from "react";
 
-/** Recursively split children into scrollable content and any elements with class "drawer-actions". */
-function splitContentAndActions(node) {
+/** Recursively walk children; remove any element with class "drawer-actions"
+ *  from the scrollable content and collect them to render in a fixed footer. */
+function splitContentAndActions(children) {
   const actions = [];
 
-  function walk(n) {
-    if (n == null) return n;
-    // Text / number / boolean / fragment nodes pass through
-    if (!React.isValidElement(n)) return n;
+  const walk = (node) => {
+    // primitives / null / booleans pass through
+    if (!React.isValidElement(node)) return node;
 
-    const cls = (n.props && n.props.className) || "";
-    const isAction =
-      typeof cls === "string" && cls.toLowerCase().includes("drawer-actions");
-
-    if (isAction) {
-      actions.push(n);
+    const cls = (node.props && node.props.className) || "";
+    if (typeof cls === "string" && cls.toLowerCase().includes("drawer-actions")) {
+      actions.push(node);
       return null; // remove from content
     }
 
-    // Recurse into children
-    const kids = React.Children.toArray(n.props.children);
-    if (kids.length === 0) return n;
+    const kids = React.Children.toArray(node.props.children);
+    if (kids.length === 0) return node;
 
     const newKids = [];
     kids.forEach((k) => {
-      const res = walk(k);
-      if (res !== null && res !== undefined && !(Array.isArray(res) && res.length === 0)) {
-        newKids.push(res);
+      if (Array.isArray(k)) {
+        // handle nested arrays (rare)
+        const inner = React.Children.toArray(k).map(walk).filter((x) => x != null);
+        newKids.push(...inner);
+      } else {
+        const res = walk(k);
+        if (res != null) newKids.push(res);
       }
     });
 
-    // If nothing changed, return original
-    if (newKids.length === kids.length && newKids.every((k, i) => k === kids[i])) {
-      return n;
+    // If children changed, clone; otherwise return original node
+    if (newKids.length !== kids.length || newKids.some((k, i) => k !== kids[i])) {
+      return React.cloneElement(node, { ...node.props, children: newKids });
     }
-    return React.cloneElement(n, { ...n.props, children: newKids });
-  }
+    return node;
+  };
 
-  const content = walk(node);
-  return { content, actions };
+  // Support top-level arrays/fragments
+  const contentNodes = [];
+  React.Children.toArray(children).forEach((child) => {
+    const res = walk(child);
+    if (res != null) contentNodes.push(res);
+  });
+
+  return { content: contentNodes, actions };
 }
 
 export default function Drawer({ open, title, onClose, children }) {
   const panelRef = useRef(null);
 
-  // Lock body scroll & focus the panel (Esc works)
+  // Lock body scroll; focus panel so Esc works
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
@@ -56,12 +62,12 @@ export default function Drawer({ open, title, onClose, children }) {
     };
   }, [open]);
 
-  const handleKeyDown = (e) => {
+  const onKeyDown = (e) => {
     if (e.key === "Escape") onClose?.();
   };
 
-  // Split the provided children into scrollable content + fixed footer actions
   const { content, actions } = splitContentAndActions(children);
+  const hasFooter = actions.length > 0;
 
   return (
     <>
@@ -86,13 +92,13 @@ export default function Drawer({ open, title, onClose, children }) {
         role="dialog"
         aria-modal="true"
         aria-hidden={!open}
-        onKeyDown={handleKeyDown}
+        onKeyDown={onKeyDown}
         style={{
           position: "fixed",
           top: 0,
           right: 0,
-          height: "100dvh",           // mobile-correct height
-          minHeight: "100vh",          // fallback
+          height: "100dvh",          // mobile-correct viewport height
+          minHeight: "100vh",         // fallback
           width: "min(520px, 92vw)",
           transform: `translateX(${open ? "0" : "100%"})`,
           transition: "transform .25s ease",
@@ -105,7 +111,7 @@ export default function Drawer({ open, title, onClose, children }) {
           pointerEvents: open ? "auto" : "none",
         }}
       >
-        {/* Header (non-scrolling) */}
+        {/* Header */}
         <div
           style={{
             display: "flex",
@@ -131,27 +137,39 @@ export default function Drawer({ open, title, onClose, children }) {
             overflowY: "auto",
             WebkitOverflowScrolling: "touch",
             overscrollBehavior: "contain",
+            // Reserve space so last fields aren't hidden under footer
+            paddingBottom: hasFooter ? "calc(84px + env(safe-area-inset-bottom, 0px))" : 12,
           }}
         >
           {content}
         </div>
 
-        {/* Fixed footer (only if .drawer-actions were found) */}
-        {actions.length > 0 && (
+        {/* Fixed footer: render any .drawer-actions here */}
+        {hasFooter && (
           <div
             style={{
               flexShrink: 0,
-              padding: "12px",
+              padding: 12,
               paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)",
               background: "rgba(2, 8, 23, 0.92)",
               backdropFilter: "blur(6px)",
               borderTop: "1px solid rgba(148,163,184,0.2)",
               display: "flex",
               gap: 8,
-              zIndex: 10,
+              zIndex: 100, // ensure above content
             }}
           >
-            {actions.map((a, i) => React.cloneElement(a, { key: i }))}
+            {actions.map((a, i) => (
+              // strip sticky class if present so it behaves inside fixed footer
+              <div key={i} style={{ display: "contents" }}>
+                {React.cloneElement(a, {
+                  className: String(a.props.className || "")
+                    .replace(/drawer-actions/g, "")
+                    .trim(),
+                  style: undefined,
+                })}
+              </div>
+            ))}
           </div>
         )}
       </aside>
