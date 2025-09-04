@@ -4,8 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "../services/api";
 import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
-/* ---------------- Hooks ---------------- */
-
+/* ---------- data hooks ---------- */
 function useEquipmentList() {
   return useQuery({
     queryKey: ["equipment-list"],
@@ -13,7 +12,6 @@ function useEquipmentList() {
     staleTime: 5 * 60_000,
   });
 }
-
 function useEquipmentInsights(id) {
   return useQuery({
     queryKey: ["equipment-insights", id],
@@ -23,36 +21,44 @@ function useEquipmentInsights(id) {
   });
 }
 
-/** Observe an element’s content box size (works on mobile WebViews). */
-function useMeasure() {
-  const ref = useRef(null);
-  const [size, setSize] = useState({ width: 0, height: 0 });
+/* ---------- sizing helpers ---------- */
+function useWindowWidth() {
+  const [w, setW] = useState(
+    typeof window !== "undefined" ? window.innerWidth : 0
+  );
+  useEffect(() => {
+    const onResize = () => setW(window.innerWidth || 0);
+    window.addEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onResize);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onResize);
+    };
+  }, []);
+  return w;
+}
 
+function useMeasuredWidth() {
+  const ref = useRef(null);
+  const [width, setWidth] = useState(0);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    // Initial sync measure (for webviews where RO fires late)
+    setWidth(el.clientWidth || 0);
 
-    // Fallback for very old webviews: set an initial width
-    setSize({ width: el.clientWidth || window.innerWidth, height: el.clientHeight || 0 });
-
-    // ResizeObserver is widely supported on Android/iOS webviews now
-    const ro = new ResizeObserver((entries) => {
-      const cr = entries[0]?.contentRect;
-      if (!cr) return;
-      // Round to integers to avoid re-renders from sub-pixel jitter
-      const w = Math.max(0, Math.round(cr.width));
-      const h = Math.max(0, Math.round(cr.height));
-      setSize((prev) => (prev.width !== w || prev.height !== h ? { width: w, height: h } : prev));
+    const ro = new ResizeObserver(([entry]) => {
+      const w = Math.round(entry?.contentRect?.width || 0);
+      if (w !== width) setWidth(w);
     });
     ro.observe(el);
     return () => ro.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  return [ref, size];
+  return [ref, width];
 }
 
-/* ---------------- UI bits ---------------- */
-
+/* ---------- small UI bits ---------- */
 function Select({ value, onChange, options }) {
   return (
     <select className="select" value={value} onChange={(e) => onChange(e.target.value)}>
@@ -65,7 +71,6 @@ function Select({ value, onChange, options }) {
     </select>
   );
 }
-
 function KPICard({ label, value, hint }) {
   return (
     <div className="card kpi">
@@ -76,11 +81,9 @@ function KPICard({ label, value, hint }) {
   );
 }
 
-/* ---------------- Page ---------------- */
-
+/* ---------- page ---------- */
 export default function EquipmentInsightsPage() {
   const [selected, setSelected] = useState("");
-
   const { data: eqList, isLoading: listLoading } = useEquipmentList();
   const { data: insights, isLoading: insLoading } = useEquipmentInsights(selected);
 
@@ -95,15 +98,18 @@ export default function EquipmentInsightsPage() {
     return { text: "Low", className: "" };
   }, [risk]);
 
-  // Nudge layout once after load (helps some webviews initialize measurements)
-  useEffect(() => {
-    const id = setTimeout(() => window.dispatchEvent(new Event("resize")), 80);
-    return () => clearTimeout(id);
-  }, [selected, series.length]);
-
-  // Chart sizing driven by ResizeObserver instead of ResponsiveContainer
-  const [chartRef, chartSize] = useMeasure();
+  // chart sizing
+  const [hostRef, measuredWidth] = useMeasuredWidth();
+  const winWidth = useWindowWidth();
+  const chartWidth = Math.max(measuredWidth, Math.min(winWidth - 32, 1200)); // fallback if RO reports 0
   const chartHeight = 300;
+
+  // nudge layout shortly after data arrives (helps some old webviews)
+  useEffect(() => {
+    if (!series.length) return;
+    const id = setTimeout(() => window.dispatchEvent(new Event("resize")), 60);
+    return () => clearTimeout(id);
+  }, [series.length]);
 
   return (
     <div className="p-4 md:p-6">
@@ -126,42 +132,30 @@ export default function EquipmentInsightsPage() {
       {selected && insights && (
         <>
           <div className="grid grid-4" style={{ marginTop: 12 }}>
-            <KPICard
-              label="Breakdowns (window)"
-              value={metrics?.breakdowns}
-              hint={`${insights.windowDays} days`}
-            />
+            <KPICard label="Breakdowns (window)" value={metrics?.breakdowns} hint={`${insights.windowDays} days`} />
             <KPICard label="MTBF (days)" value={metrics?.mtbfDays} />
-            <KPICard
-              label="Top reason"
-              value={metrics?.topReason?.text || "—"}
-              hint={`count: ${metrics?.topReason?.count || 0}`}
-            />
-            <KPICard
-              label="Next 30d failure risk"
-              value={
-                metrics?.nextFailure?.probability != null
-                  ? `${metrics.nextFailure.probability}%`
-                  : "—"
-              }
-            />
+            <KPICard label="Top reason" value={metrics?.topReason?.text || "—"} hint={`count: ${metrics?.topReason?.count || 0}`} />
+            <KPICard label="Next 30d failure risk" value={metrics?.nextFailure?.probability != null ? `${metrics.nextFailure.probability}%` : "—"} />
           </div>
 
-          {/* ---- Chart (ResizeObserver-driven) ---- */}
+          {/* Chart */}
           <div className="card" style={{ marginTop: 14 }}>
             <div className="badge">Breakdowns per week</div>
             <div
-              ref={chartRef}
-              // minWidth:0 is important in flex/grid; gives the box a measurable width
-              style={{ height: chartHeight, marginTop: 8, width: "100%", minWidth: 0 }}
+              ref={hostRef}
+              style={{
+                width: "100%",
+                minWidth: 1,      // critical for flex/grid parents on mobile
+                height: chartHeight,
+                marginTop: 8,
+              }}
             >
               {series.length === 0 ? (
-                <div className="muted" style={{ padding: 12 }}>
-                  No breakdowns in this window.
-                </div>
-              ) : chartSize.width > 0 ? (
+                <div className="muted" style={{ padding: 12 }}>No breakdowns in this window.</div>
+              ) : chartWidth > 0 ? (
                 <LineChart
-                  width={chartSize.width}
+                  key={chartWidth}              // force re-render when width changes
+                  width={chartWidth}
                   height={chartHeight}
                   data={series.map((d) => ({ ...d, count: Number(d.count) || 0 }))}
                   margin={{ top: 8, right: 8, bottom: 8, left: 0 }}
@@ -176,28 +170,22 @@ export default function EquipmentInsightsPage() {
             </div>
           </div>
 
-          {/* ---- Actions ---- */}
+          {/* Actions */}
           <div className="card" style={{ marginTop: 14 }}>
             <div className="badge">Recommended next actions</div>
             <ul style={{ marginTop: 10, paddingLeft: 18 }}>
-              {(insights.actions || []).map((a, i) => (
-                <li key={i}>{a}</li>
-              ))}
+              {(insights.actions || []).map((a, i) => <li key={i}>{a}</li>)}
             </ul>
           </div>
 
-          {/* ---- Recent maintenance (responsive table) ---- */}
+          {/* Recent maintenance */}
           <div className="card" style={{ marginTop: 14 }}>
             <div className="badge">Recent maintenance</div>
             <div className="table-responsive" style={{ marginTop: 8 }}>
               <table className="table">
                 <thead>
                   <tr>
-                    <th>When</th>
-                    <th>Type</th>
-                    <th>Reason</th>
-                    <th>Downtime</th>
-                    <th>Severity</th>
+                    <th>When</th><th>Type</th><th>Reason</th><th>Downtime</th><th>Severity</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -218,7 +206,7 @@ export default function EquipmentInsightsPage() {
             )}
           </div>
 
-          {/* ---- Recent logbook ---- */}
+          {/* Recent logbook */}
           <div className="card" style={{ marginTop: 14 }}>
             <div className="badge">Recent logbook notes</div>
             <ul style={{ marginTop: 8 }}>
