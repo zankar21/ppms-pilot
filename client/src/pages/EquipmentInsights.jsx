@@ -1,16 +1,9 @@
 import React, { useMemo, useState, useRef, useLayoutEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../services/api";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-} from "recharts";
+import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
-/* ---------- data hooks ---------- */
+/* ---------------- data hooks ---------------- */
 function useEquipmentList() {
   return useQuery({
     queryKey: ["equipment-list"],
@@ -27,7 +20,7 @@ function useEquipmentInsights(id) {
   });
 }
 
-/* ---------- size hook (bulletproof on mobile/webviews) ---------- */
+/* ---------------- robust size hook ---------------- */
 function useElementSize() {
   const ref = useRef(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
@@ -36,11 +29,25 @@ function useElementSize() {
     const el = ref.current;
     if (!el) return;
 
-    const measure = () => {
-      const w = el.clientWidth || 0;
+    let rafId = 0;
+    const readWidth = () => {
+      // try element width
+      let w = el.clientWidth || 0;
+      if (!w) w = Math.round(el.getBoundingClientRect().width || 0);
+      // final fallback: parent width
+      if (!w && el.parentElement) {
+        w = el.parentElement.clientWidth || Math.round(el.parentElement.getBoundingClientRect().width || 0);
+      }
       const h = el.clientHeight || 0;
-      setSize((prev) => (prev.width !== w || prev.height !== h ? { width: w, height: h } : prev));
+      return { w, h };
     };
+
+    const measure = () => {
+      const { w, h } = readWidth();
+      setSize((p) => (p.width !== w || p.height !== h ? { width: w, height: h } : p));
+      if (!w) rafId = requestAnimationFrame(measure); // keep trying until layout stabilizes
+    };
+
     measure();
 
     const ro = new ResizeObserver(measure);
@@ -54,13 +61,14 @@ function useElementSize() {
       ro.disconnect();
       window.removeEventListener("resize", onResize);
       window.removeEventListener("orientationchange", onResize);
+      if (rafId) cancelAnimationFrame(rafId);
     };
   }, []);
 
   return [ref, size];
 }
 
-/* ---------- small UI bits ---------- */
+/* ---------------- small UI ---------------- */
 function Select({ value, onChange, options }) {
   return (
     <select className="select" value={value} onChange={(e) => onChange(e.target.value)}>
@@ -83,7 +91,7 @@ function KPICard({ label, value, hint }) {
   );
 }
 
-/* ---------- page ---------- */
+/* ---------------- page ---------------- */
 export default function EquipmentInsightsPage() {
   const [selected, setSelected] = useState("");
   const { data: eqList, isLoading: listLoading } = useEquipmentList();
@@ -91,6 +99,7 @@ export default function EquipmentInsightsPage() {
 
   const rows = eqList?.rows || [];
   const metrics = insights?.metrics;
+
   const seriesRaw = Array.isArray(insights?.series) ? insights.series : [];
   const series = seriesRaw.map((d) => ({ ...d, count: Number(d.count) || 0 }));
 
@@ -101,9 +110,8 @@ export default function EquipmentInsightsPage() {
     return { text: "Low", className: "" };
   }, [risk]);
 
-  // Measure chart host and render LineChart with explicit width/height
   const [hostRef, hostSize] = useElementSize();
-  const chartHeight = 300; // fixed height (safe for mobile)
+  const chartHeight = 300;
 
   return (
     <div className="p-4 md:p-6">
@@ -135,15 +143,15 @@ export default function EquipmentInsightsPage() {
             />
           </div>
 
-          {/* Chart (no ResponsiveContainer; uses explicit measured width) */}
-          <div className="card" style={{ marginTop: 14 }}>
+          {/* Chart card */}
+          <div className="card" style={{ marginTop: 14, minWidth: 0 }}>
             <div className="badge">Breakdowns per week</div>
 
             <div
               ref={hostRef}
               style={{
                 width: "100%",
-                minWidth: 0,           // important in grid/flex
+                minWidth: 0,
                 height: chartHeight,
                 marginTop: 8,
               }}
@@ -154,7 +162,7 @@ export default function EquipmentInsightsPage() {
                 </div>
               ) : hostSize.width > 0 ? (
                 <LineChart
-                  key={`w${hostSize.width}-n${series.length}`} // remount when width changes
+                  key={`w${hostSize.width}-n${series.length}`}
                   width={hostSize.width}
                   height={chartHeight}
                   data={series}
@@ -172,7 +180,6 @@ export default function EquipmentInsightsPage() {
             </div>
           </div>
 
-          {/* Actions */}
           <div className="card" style={{ marginTop: 14 }}>
             <div className="badge">Recommended next actions</div>
             <ul style={{ marginTop: 10, paddingLeft: 18 }}>
@@ -180,7 +187,6 @@ export default function EquipmentInsightsPage() {
             </ul>
           </div>
 
-          {/* Recent maintenance */}
           <div className="card" style={{ marginTop: 14 }}>
             <div className="badge">Recent maintenance</div>
             <div className="table-responsive" style={{ marginTop: 8 }}>
@@ -208,7 +214,6 @@ export default function EquipmentInsightsPage() {
             )}
           </div>
 
-          {/* Recent logbook */}
           <div className="card" style={{ marginTop: 14 }}>
             <div className="badge">Recent logbook notes</div>
             <ul style={{ marginTop: 8 }}>
