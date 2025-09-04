@@ -1,38 +1,9 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 
 export default function Drawer({ open, title, onClose, children, actions = null }) {
   const panelRef = useRef(null);
-  const [vh, setVh] = useState(0);
 
-  // Measure visual viewport so bottom footer is always inside the screen.
-  useLayoutEffect(() => {
-    if (!open) return;
-
-    const vv = window.visualViewport;
-    const measure = () => {
-      const h = vv?.height ? Math.round(vv.height) : Math.round(window.innerHeight || 0);
-      setVh(h > 0 ? h : 0);
-    };
-    measure();
-
-    vv?.addEventListener?.("resize", measure);
-    vv?.addEventListener?.("scroll", measure);
-    window.addEventListener("resize", measure);
-    window.addEventListener("orientationchange", measure);
-
-    // small safety timer during keyboard animations
-    const tid = setInterval(measure, 250);
-
-    return () => {
-      vv?.removeEventListener?.("resize", measure);
-      vv?.removeEventListener?.("scroll", measure);
-      window.removeEventListener("resize", measure);
-      window.removeEventListener("orientationchange", measure);
-      clearInterval(tid);
-    };
-  }, [open]);
-
-  // Lock background scroll
+  // Lock background scroll when open
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
@@ -57,7 +28,7 @@ export default function Drawer({ open, title, onClose, children, actions = null 
         }}
       />
 
-      {/* Panel: header | body (scroll) | footer */}
+      {/* Panel: header (no scroll) | body (scroll + sticky footer inside) */}
       <aside
         ref={panelRef}
         tabIndex={-1}
@@ -68,7 +39,7 @@ export default function Drawer({ open, title, onClose, children, actions = null 
           position: "fixed",
           top: 0,
           right: 0,
-          height: vh ? `${vh}px` : "100svh",   // use measured px, fallback to 100svh
+          height: "100dvh",                 // safe on Android/iOS modern
           width: "min(520px, 92vw)",
           transform: `translateX(${open ? "0" : "100%"})`,
           transition: "transform .25s ease",
@@ -97,40 +68,41 @@ export default function Drawer({ open, title, onClose, children, actions = null 
           <button className="btn" style={{ marginLeft: "auto" }} onClick={onClose}>Close</button>
         </div>
 
-        {/* Scrollable body */}
+        {/* Scrollable body — action bar is sticky inside here */}
         <div
           style={{
             flex: "1 1 auto",
-            minHeight: 0,                 // critical for scroll
+            minHeight: 0,                     // allows scrolling
             overflowY: "auto",
             overflowX: "hidden",
             WebkitOverflowScrolling: "touch",
             overscrollBehavior: "contain",
             padding: 12,
-            paddingBottom: actions ? 16 : 12,
+            paddingBottom: 16,
           }}
         >
           {children}
-        </div>
 
-        {/* Fixed footer */}
-        {actions && (
-          <div
-            style={{
-              flex: "0 0 auto",
-              padding: 12,
-              paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)",
-              background: "rgba(2, 8, 23, 0.92)",
-              backdropFilter: "blur(6px)",
-              borderTop: "1px solid rgba(148,163,184,0.2)",
-              display: "flex",
-              gap: 8,
-              zIndex: 1200,
-            }}
-          >
-            {actions}
-          </div>
-        )}
+          {/* Sticky action bar */}
+          {actions && (
+            <div
+              style={{
+                position: "sticky",
+                bottom: 0,
+                display: "flex",
+                gap: 8,
+                padding: "10px 0 calc(10px + env(safe-area-inset-bottom, 0px))",
+                background: "linear-gradient(180deg, transparent, rgba(2,8,23,0.92) 50%)",
+                borderTop: "1px solid rgba(148,163,184,0.2)",
+                backdropFilter: "blur(8px)",
+                zIndex: 2,
+                marginTop: 12,
+              }}
+            >
+              {actions}
+            </div>
+          )}
+        </div>
       </aside>
     </>
   );
