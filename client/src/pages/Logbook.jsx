@@ -216,92 +216,140 @@ export default function Logbook() {
       {/* drawer */}
       <Drawer open={open} title="Logbook Entry" onClose={() => setOpen(false)}>
         {!edit ? null : (
-          <div className="grid grid-2">
-            <div className="card">
-              <div className="label">Date</div>
-              <input className="input" value={edit.date} onChange={(e) => onChange("date", e.target.value)} />
-            </div>
-            <div className="card">
-              <div className="label">Shift</div>
-              <select className="select" value={edit.shift} onChange={(e) => onChange("shift", e.target.value)}>
-                <option>A</option>
-                <option>B</option>
-                <option>C</option>
-              </select>
+          // ✅ Flex column container with its own scroller + fixed footer
+          <div style={{ display: "flex", flexDirection: "column", height: "100%", maxHeight: "100dvh", minHeight: 0 }}>
+            {/* Scrollable body */}
+            <div
+              style={{
+                flex: 1,
+                minHeight: 0,
+                overflowY: "auto",
+                WebkitOverflowScrolling: "touch",
+                overscrollBehavior: "contain",
+                padding: 12,
+                paddingBottom: 16,
+              }}
+            >
+              <div className="grid grid-2" style={{ gap: 12 }}>
+                <div className="card">
+                  <div className="label">Date</div>
+                  <input
+                    className="input"
+                    type="date"
+                    value={edit.date || ""}
+                    onChange={(e) => onChange("date", e.target.value)}
+                  />
+                </div>
+                <div className="card">
+                  <div className="label">Shift</div>
+                  <select className="select" value={edit.shift} onChange={(e) => onChange("shift", e.target.value)}>
+                    <option>A</option>
+                    <option>B</option>
+                    <option>C</option>
+                  </select>
+                </div>
+
+                <div className="card">
+                  <div className="label">Unit</div>
+                  <input className="input" value={edit.unit || ""} onChange={(e) => onChange("unit", e.target.value)} />
+                </div>
+                <div className="card">
+                  <div className="label">Department</div>
+                  <input
+                    className="input"
+                    value={edit.department || ""}
+                    onChange={(e) => onChange("department", e.target.value)}
+                  />
+                </div>
+
+                <div className="card" style={{ gridColumn: "1 / -1" }}>
+                  <div className="label">Summary</div>
+                  <input
+                    className="input"
+                    value={edit.summary || ""}
+                    onChange={(e) => onChange("summary", e.target.value)}
+                  />
+                </div>
+                <div className="card" style={{ gridColumn: "1 / -1" }}>
+                  <div className="label">Details</div>
+                  <input
+                    className="input"
+                    value={edit.details || ""}
+                    onChange={(e) => onChange("details", e.target.value)}
+                  />
+                </div>
+
+                <div className="card">
+                  <div className="label">Operator</div>
+                  <input
+                    className="input"
+                    value={edit.operator || ""}
+                    onChange={(e) => onChange("operator", e.target.value)}
+                  />
+                </div>
+                <div className="card">
+                  <div className="label">Handed Over To</div>
+                  <input
+                    className="input"
+                    value={edit.handed_over_to || ""}
+                    onChange={(e) => onChange("handed_over_to", e.target.value)}
+                  />
+                </div>
+
+                <div className="card">
+                  <div className="label">Load (MW)</div>
+                  <input
+                    className="input"
+                    type="number"
+                    step="0.1"
+                    value={edit.load_mw ?? ""}
+                    onChange={(e) => onChange("load_mw", e.target.value)}
+                  />
+                </div>
+                <div className="card">
+                  <div className="label">Ambient Temp (°C)</div>
+                  <input
+                    className="input"
+                    type="number"
+                    step="0.1"
+                    value={edit.ambient_temp_c ?? ""}
+                    onChange={(e) => onChange("ambient_temp_c", e.target.value)}
+                  />
+                </div>
+
+                <div className="card" style={{ gridColumn: "1 / -1" }}>
+                  <div className="label">Params (JSON)</div>
+                  <textarea
+                    className="input"
+                    style={{ height: 160 }}
+                    value={edit._paramsText}
+                    onChange={(e) => onChange("_paramsText", e.target.value)}
+                  />
+                </div>
+              </div>
             </div>
 
-            <div className="card">
-              <div className="label">Unit</div>
-              <input className="input" value={edit.unit || ""} onChange={(e) => onChange("unit", e.target.value)} />
+            {/* Fixed footer (always visible) */}
+            <div
+              style={{
+                flexShrink: 0,
+                padding: "12px",
+                paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)",
+                background: "rgba(2, 8, 23, 0.92)",
+                backdropFilter: "blur(6px)",
+                borderTop: "1px solid rgba(148,163,184,0.2)",
+                display: "flex",
+                gap: 8,
+                zIndex: 10,
+              }}
+            >
+              <button className="btn" onClick={save} disabled={saving}>
+                {saving ? "Saving…" : "Save"}
+              </button>
+              <button className="btn danger" onClick={removeOne} disabled={deleting}>
+                {deleting ? "Deleting…" : "Delete"}
+              </button>
             </div>
-            <div className="card">
-              <div className="label">Department</div>
-              <input
-                className="input"
-                value={edit.department || ""}
-                onChange={(e) => onChange("department", e.target.value)}
-              />
-            </div>
-
-            <div className="card" style={{ gridColumn: "1 / -1" }}>
-              <div className="label">Summary</div>
-              <input className="input" value={edit.summary || ""} onChange={(e) => onChange("summary", e.target.value)} />
-            </div>
-            <div className="card" style={{ gridColumn: "1 / -1" }}>
-              <div className="label">Details</div>
-              <input className="input" value={edit.details || ""} onChange={(e) => onChange("details", e.target.value)} />
-            </div>
-
-            <div className="card">
-              <div className="label">Operator</div>
-              <input className="input" value={edit.operator || ""} onChange={(e) => onChange("operator", e.target.value)} />
-            </div>
-            <div className="card">
-              <div className="label">Handed Over To</div>
-              <input
-                className="input"
-                value={edit.handed_over_to || ""}
-                onChange={(e) => onChange("handed_over_to", e.target.value)}
-              />
-            </div>
-
-            <div className="card">
-              <div className="label">Load (MW)</div>
-              <input
-                className="input"
-                type="number"
-                step="0.1"
-                value={edit.load_mw ?? ""}
-                onChange={(e) => onChange("load_mw", e.target.value)}
-              />
-            </div>
-            <div className="card">
-              <div className="label">Ambient Temp (°C)</div>
-              <input
-                className="input"
-                type="number"
-                step="0.1"
-                value={edit.ambient_temp_c ?? ""}
-                onChange={(e) => onChange("ambient_temp_c", e.target.value)}
-              />
-            </div>
-
-            <div className="card" style={{ gridColumn: "1 / -1" }}>
-              <div className="label">Params (JSON)</div>
-              <textarea
-                className="input"
-                style={{ height: 160 }}
-                value={edit._paramsText}
-                onChange={(e) => onChange("_paramsText", e.target.value)}
-              />
-            </div>
-
-            <div className="drawer-actions" style={{gridColumn:'1 / -1'}}>
-  <button className="btn" onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
-  <button className="btn danger" onClick={removeOne} disabled={deleting}>
-    {deleting ? 'Deleting…' : 'Delete'}
-  </button>
-</div>
           </div>
         )}
       </Drawer>
